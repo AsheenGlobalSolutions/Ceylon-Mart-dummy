@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ceylon Mart | Shop</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="brand">Ceylon Mart</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="index.html">Shop</a>
+        <a href="admin.html">Admin</a>
+        <a href="sales-dashboard.html">Sales</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+
+    <header style="text-align: center; margin: 3rem 0;">
+      <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">Fresh Products</h1>
+      <p style="color: var(--gray);">Best quality items delivered to your doorstep.</p>
+    </header>
+
+    <div class="shop-layout">
+
+      <div class="shop-main">
+        <section id="products" class="product-list">
+          <!-- Products Loaded Here -->
+        </section>
+
+        <!-- Pagination Controls -->
+        <div id="pagination" class="pagination"></div>
+      </div>
+
+      <aside class="shop-sidebar">
+        <section class="cart-section">
+          <h3>🛒 Your Cart</h3>
+          <div id="cartItems" class="cart-items">
+            <p style="color:var(--gray); text-align:center; padding:20px;">Cart is empty</p>
+          </div>
+
+          <div class="total">
+            Total: Rs. <span id="total">0</span>
+          </div>
+
+          <div class="checkout-section">
+            <h4>Checkout Details</h4>
+            <input id="customerName" placeholder="Full Name" style="width: 100%; margin-bottom: 10px; padding: 10px;">
+            <input id="customerPhone" placeholder="Phone Number"
+              style="width: 100%; margin-bottom: 10px; padding: 10px;">
+            <input id="customerEmail" type="email" placeholder="Email Address"
+              style="width: 100%; margin-bottom: 10px; padding: 10px;">
+
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="deliveryType" value="Pickup" checked> Pickup
+              </label>
+              <label>
+                <input type="radio" name="deliveryType" value="Delivery"> Delivery
+              </label>
+            </div>
+
+            <textarea id="customerNote" placeholder="Add a note (optional)" rows="3"
+              style="width: 100%; margin-bottom: 10px; padding: 10px;"></textarea>
+
+            <button class="btn" style="width: 100%;" onclick="sendOrder()">Place Order via Email</button>
+          </div>
+        </section>
+      </aside>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Ceylon Mart. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // 🔐 Replace with your EmailJS keys
+    const PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+    const SERVICE_ID = "YOUR_SERVICE_ID";
+    const TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+
+    emailjs.init(PUBLIC_KEY);
+
+    // Load Products
+    let products = JSON.parse(localStorage.getItem("products")) || [];
+
+    if (products.length === 0) {
+      products = [
+        { id: 1, name: "White Keeri Samba 8 LB", price: 2500, qty: 50 },
+        { id: 2, name: "Sugar 1KG", price: 420, qty: 100 },
+        { id: 3, name: "Tea 200g", price: 650, qty: 30 }
+      ];
+      localStorage.setItem("products", JSON.stringify(products));
+    }
+
+    const ITEMS_PER_PAGE = 100;
+    let currentPage = 1;
+    let cart = [];
+
+    function renderProducts() {
+      const container = document.getElementById("products");
+      const paginationContainer = document.getElementById("pagination");
+
+      // Calculate Pagination
+      const totalItems = products.length;
+      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+      // Ensure current page is valid
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+      if (currentPage < 1) currentPage = 1;
+
+      const start = (currentPage - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const displayedProducts = products.slice(start, end);
+
+      // Render List Items
+      if (displayedProducts.length === 0) {
+        container.innerHTML = `<p style="text-align:center; width:100%;">No products found.</p>`;
+      } else {
+        container.innerHTML = displayedProducts.map(p => {
+          const stockStatus = p.qty > 10 ? 'stock-ok' : (p.qty > 0 ? 'stock-low' : 'stock-out');
+          const stockText = p.qty > 10 ? 'In Stock' : (p.qty > 0 ? `Low Qty: ${p.qty}` : 'Out of Stock');
+          const isDisabled = p.qty === 0 ? 'disabled' : '';
+
+          const imageSrc = p.image ? p.image : 'https://placehold.co/50x50?text=No+Img';
+
+          return `
+                    <div class="product-row">
+                        <img src="${imageSrc}" class="product-thumb" alt="${p.name}">
+                        <div class="product-info">
+                            <h4>${p.name}</h4>
+                            <div class="product-meta">
+                                <span class="price">Rs. ${p.price}</span>
+                                <span class="badget ${stockStatus}">${stockText}</span>
+                            </div>
+                        </div>
+                        <div class="product-action">
+                             <button class="btn btn-sm" onclick="addToCart(${p.id})" ${isDisabled}>
+                                ${p.qty === 0 ? 'Notify' : 'Add'}
+                            </button>
+                        </div>
+                    </div>`;
+        }).join("");
+      }
+
+      // Render Pagination Buttons
+      let paginationHTML = "";
+      if (totalPages > 1) {
+        paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+          paginationHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+        }
+
+        paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+      }
+      paginationContainer.innerHTML = paginationHTML;
+      renderCart();
+    }
+
+    function changePage(page) {
+      const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+      if (page < 1 || page > totalPages) return;
+      currentPage = page;
+      renderProducts();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function addToCart(id) {
+      const product = products.find(p => p.id === id);
+      const existing = cart.find(i => i.id === id);
+
+      if (product.qty === 0) return;
+
+      // Check if adding exceeds stock
+      const currentQtyInCart = existing ? existing.qty : 0;
+      if (currentQtyInCart + 1 > product.qty) {
+        alert("Sorry, we don't have enough stock!");
+        return;
+      }
+
+      if (existing) {
+        existing.qty++;
+      } else {
+        cart.push({ ...product, qty: 1 });
+      }
+
+      renderCart();
+    }
+
+    function renderCart() {
+      let total = 0;
+      const container = document.getElementById("cartItems");
+
+      if (cart.length === 0) {
+        container.innerHTML = `<p style="color:var(--gray); text-align:center; padding:20px;">Cart is empty</p>`;
+        document.getElementById("total").innerText = "0";
+        return;
+      }
+
+      container.innerHTML = `
+            <div style="text-align:right; margin-bottom:10px;">
+                <button class="btn-clear-cart" onclick="clearCart()">Clear Cart</button>
+            </div>
+        ` + cart.map(item => {
+        total += item.price * item.qty;
+        return `<div class="cart-item">
+                    <span style="flex:1;">${item.name}</span>
+                    <div class="cart-controls">
+                        <button class="qty-btn" onclick="updateCartQty(${item.id}, -1)">-</button>
+                        <span>${item.qty}</span>
+                        <button class="qty-btn" onclick="updateCartQty(${item.id}, 1)">+</button>
+                        <button class="remove-btn" onclick="removeFromCart(${item.id})">×</button>
+                    </div>
+                    <span style="margin-left:10px; width:80px; text-align:right;">Rs. ${item.price * item.qty}</span>
+                </div>`;
+      }).join("");
+
+      document.getElementById("total").innerText = total;
+    }
+
+    function updateCartQty(id, change) {
+      const item = cart.find(i => i.id === id);
+      const product = products.find(p => p.id === id);
+
+      if (!item || !product) return;
+
+      const newQty = item.qty + change;
+
+      if (newQty <= 0) {
+        removeFromCart(id);
+        return;
+      }
+
+      if (newQty > product.qty) {
+        alert("Max stock reached!");
+        return;
+      }
+
+      item.qty = newQty;
+      renderCart();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(i => i.id !== id);
+      renderCart();
+    }
+
+    function clearCart() {
+      if (confirm("Clear all items?")) {
+        cart = [];
+        renderCart();
+      }
+    }
+
+    function sendOrder() {
+      if (cart.length === 0) {
+        alert("Cart is empty!");
+        return;
+      }
+
+      const name = document.getElementById("customerName").value;
+      const phone = document.getElementById("customerPhone").value;
+      const email = document.getElementById("customerEmail").value;
+      const note = document.getElementById("customerNote").value;
+
+      const deliveryType = document.querySelector('input[name="deliveryType"]:checked').value;
+
+      if (!name || !phone || !email) {
+        alert("Please enter all required customer details (Name, Phone, Email).");
+        return;
+      }
+
+      // OPTIONAL: Deduct stock from LocalStorage (Simulate backend update)
+      // Note: This is a frontend-only hack. Real apps do this on server.
+      updateStock();
+
+      let orderDetails = "";
+      let total = 0;
+
+      cart.forEach(item => {
+        total += item.price * item.qty;
+        orderDetails += `${item.name} x ${item.qty}\n`;
+      });
+
+      const templateParams = {
+        customer_name: name,
+        customer_phone: phone,
+        customer_email: email,
+        delivery_type: deliveryType,
+        customer_note: note,
+        order_details: orderDetails,
+        order_total: total
+      };
+
+      emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams)
+        .then(function (response) {
+          alert("Order Sent Successfully!");
+          cart = [];
+          renderCart();
+          renderProducts(); // Re-render to show updated stock
+        }, function (error) {
+          alert("FAILED... Check EmailJS setup");
+          console.log(error);
+        });
+    }
+
+    function updateStock() {
+      // Deduct items from products array and save to localstorage
+      cart.forEach(cartItem => {
+        const product = products.find(p => p.id === cartItem.id);
+        if (product) {
+          product.qty = Math.max(0, product.qty - cartItem.qty);
+        }
+      });
+      localStorage.setItem("products", JSON.stringify(products));
+    }
+
+    renderProducts();
+    renderCart();
+
+  </script>
+</body>
+
+</html>
