@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ceylon Mart | Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-card {
+            max-width: 400px;
+            margin: 100px auto;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <header class="navbar">
+        <div class="container">
+            <a href="new-product-page.html" class="brand">Ceylon Mart</a>
+            <div class="nav-links">
+                <a href="new-product-page.html">Shop</a>
+                <a href="#" class="active">Inventory</a>
+                <a href="sales-dashboard.html">Sales</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Login Section -->
+        <div id="loginSection" class="card login-card">
+            <h2>Admin Login</h2>
+            <p style="color:var(--gray); margin-bottom:1.5rem;">Please sign in to continue</p>
+            <input type="text" id="username" placeholder="Username (admin)">
+            <input type="password" id="password" placeholder="Password (admin)">
+            <button class="btn" style="width:100%;" onclick="login()">Login</button>
+            <p id="loginError" style="color: var(--danger); margin-top: 1rem; display: none;">Invalid Credentials</p>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" style="display: none;">
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; margin-top: 2rem;">
+                <h1>Dashboard</h1>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3>Add / Update Product</h3>
+                <input type="hidden" id="productId">
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 0;">
+                    <div>
+                        <input type="text" id="productName" placeholder="Product Name">
+                    </div>
+                    <div>
+                        <input type="number" id="productPrice" placeholder="Price (Rs.)">
+                    </div>
+                    <div>
+                        <input type="number" id="productQty" placeholder="Quantity">
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <input type="text" id="productImage" placeholder="Image URL (optional)">
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button class="btn" onclick="saveProduct()">Save Product</button>
+                    <button class="btn btn-outline" onclick="clearForm()" style="margin-left: 0.5rem;">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Product Table -->
+            <div class="card" style="overflow-x: auto;">
+                <h3>Current Inventory</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+                <!-- Pagination Controls -->
+                <div id="pagination" class="pagination" style="justify-content: flex-end; margin-top: 1rem;"></div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Ceylon Mart. Admin Panel.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Login Logic ---
+        function login() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+
+            if (user === "admin" && pass === "admin") {
+                document.getElementById("loginSection").style.display = "none";
+                document.getElementById("dashboardSection").style.display = "block";
+                loadProducts();
+            } else {
+                document.getElementById("loginError").style.display = "block";
+            }
+        }
+
+        function logout() {
+            document.getElementById("loginSection").style.display = "block";
+            document.getElementById("dashboardSection").style.display = "none";
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+        }
+
+        // --- Product Management Logic ---
+        const ITEMS_PER_PAGE = 20; // Admin Pagination Limit
+        let currentPage = 1;
+
+        function getProducts() {
+            return JSON.parse(localStorage.getItem("products")) || [];
+        }
+
+        function saveProducts(products) {
+            localStorage.setItem("products", JSON.stringify(products));
+            loadProducts(); // Refresh table
+        }
+
+        function loadProducts() {
+            const products = getProducts();
+            const tbody = document.getElementById("productTableBody");
+            const paginationContainer = document.getElementById("pagination");
+            tbody.innerHTML = "";
+
+            if (products.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No products found.</td></tr>";
+                paginationContainer.innerHTML = "";
+                return;
+            }
+
+            // Pagination Logic
+            const totalItems = products.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            const displayedProducts = products.slice(start, end);
+
+            displayedProducts.forEach(p => {
+                const row = `<tr>
+                <td>${p.id}</td>
+                <td>${p.name}</td>
+                <td>Rs. ${p.price}</td>
+                <td>
+                    <span class="badget ${p.qty > 10 ? 'stock-ok' : (p.qty > 0 ? 'stock-low' : 'stock-out')}">
+                        ${p.qty || 0}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;" onclick="editProduct(${p.id})">Edit</button>
+                    <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-left: 0.5rem;" onclick="deleteProduct(${p.id})">Delete</button>
+                </td>
+            </tr>`;
+                tbody.innerHTML += row;
+            });
+
+            // Render Pagination Buttons
+            let paginationHTML = "";
+            if (totalPages > 1) {
+                paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`;
+
+                for (let i = 1; i <= totalPages; i++) {
+                    paginationHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+                }
+
+                paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            }
+            paginationContainer.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            const products = getProducts();
+            const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            loadProducts();
+        }
+
+        function saveProduct() {
+            const id = document.getElementById("productId").value;
+            const name = document.getElementById("productName").value;
+            const price = document.getElementById("productPrice").value;
+            const qty = document.getElementById("productQty").value;
+            const image = document.getElementById("productImage").value;
+
+            if (!name || !price || !qty) {
+                alert("Please enter details.");
+                return;
+            }
+
+            let products = getProducts();
+
+            if (id) {
+                // Update existing
+                const index = products.findIndex(p => p.id == id);
+                if (index !== -1) {
+                    products[index].name = name;
+                    products[index].price = parseInt(price);
+                    products[index].qty = parseInt(qty);
+                    products[index].image = image;
+                }
+            } else {
+                // Add new
+                const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+                products.push({ id: newId, name: name, price: parseInt(price), qty: parseInt(qty), image: image });
+            }
+
+            saveProducts(products);
+            clearForm();
+        }
+
+        function editProduct(id) {
+            const products = getProducts();
+            const product = products.find(p => p.id === id);
+            if (product) {
+                document.getElementById("productId").value = product.id;
+                document.getElementById("productName").value = product.name;
+                document.getElementById("productPrice").value = product.price;
+                document.getElementById("productQty").value = product.qty || 0;
+                document.getElementById("productImage").value = product.image || "";
+            }
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Are you sure you want to delete this product?")) {
+                let products = getProducts();
+                products = products.filter(p => p.id !== id);
+                saveProducts(products);
+            }
+        }
+
+        function clearForm() {
+            document.getElementById("productId").value = "";
+            document.getElementById("productName").value = "";
+            document.getElementById("productPrice").value = "";
+            document.getElementById("productQty").value = "";
+            document.getElementById("productImage").value = "";
+        }
+    </script>
+</body>
+
+</html>

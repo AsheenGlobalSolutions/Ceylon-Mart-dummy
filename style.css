@@ -1,0 +1,701 @@
+/* Modern Design System 2.0 */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary: #6366f1;
+    /* Indigo-500 */
+    --primary-hover: #4f46e5;
+    /* Indigo-600 */
+    --secondary: #10b981;
+    /* Emerald-500 */
+    --accent: #f59e0b;
+    /* Amber-500 */
+    --danger: #ef4444;
+    /* Red-500 */
+    --dark: #1e293b;
+    /* Slate-800 */
+    --text: #334155;
+    /* Slate-700 */
+    --text-light: #64748b;
+    /* Slate-500 */
+    --light: #f1f5f9;
+    /* Slate-100 */
+    --white: #ffffff;
+    --border: #e2e8f0;
+    /* Slate-200 */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --radius: 16px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #f8fafc;
+    /* Slate-50 */
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    line-height: 1.5;
+}
+
+/* --- Layout --- */
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+    flex: 1;
+}
+
+/* --- Components --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: var(--primary);
+    color: var(--white);
+    font-size: 0.95rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    background: var(--text-light);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+.btn-secondary {
+    background: var(--white);
+    border: 1px solid var(--border);
+    color: var(--dark);
+}
+
+.btn-secondary:hover {
+    background: var(--light);
+    border-color: var(--text-light);
+    box-shadow: var(--shadow-sm);
+    color: var(--dark);
+}
+
+.btn-danger {
+    background: var(--danger);
+}
+
+input,
+textarea,
+select {
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    background-color: #fcfcfc;
+    color: var(--dark);
+    font-family: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: var(--white);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* --- Cards --- */
+.card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+/* --- Shop Layout --- */
+.shop-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.shop-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.shop-sidebar {
+    width: 380px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 2rem;
+}
+
+/* --- Cart & Checkout --- */
+.cart-section {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.cart-items {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding-right: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.cart-items::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cart-items::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cart-items::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.cart-items::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.checkout-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+/* --- Tables (Admin) --- */
+.table-container {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    text-align: left;
+}
+
+th {
+    background-color: #f8fafc;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.95rem;
+    vertical-align: middle;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover {
+    background-color: #f8fafc;
+}
+
+/* --- Navigation --- */
+.navbar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+}
+
+.brand {
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-light);
+    font-weight: 500;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    color: var(--primary);
+}
+
+/* --- Footer --- */
+.footer {
+    background: var(--dark);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 3rem 0;
+    margin-top: auto;
+    text-align: center;
+    font-size: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+.footer p {
+    margin: 0;
+}
+
+/* --- Mobile Layout Overrides --- */
+@media (max-width: 900px) {
+    .shop-layout {
+        flex-direction: column;
+    }
+
+    .shop-sidebar {
+        width: 100%;
+        position: static;
+        margin-top: 2rem;
+    }
+}
+
+/* --- Compact Grid Layout (3x3 Desktop) --- */
+.product-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    /* 3 Columns on Desktop */
+    gap: 12px;
+    margin-bottom: 2rem;
+    border: none;
+    background: transparent;
+}
+
+.product-row {
+    background: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    /* Lighter shadow */
+    padding: 8px;
+    /* Reduced padding */
+    display: flex;
+    flex-direction: row;
+    /* Horizontal Layout: Image Left, Content Right */
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100%;
+}
+
+.product-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.product-thumb {
+    width: 70px;
+    /* Fixed width for horizontal layout */
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #f9fafb;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.product-info {
+    width: auto;
+    text-align: left;
+    /* Left align text */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Tighter gap */
+    flex: 1;
+    min-width: 0;
+    /* Prevent overflow */
+    justify-content: center;
+}
+
+.product-info h4 {
+    font-size: 0.9rem;
+    /* Smaller font */
+    font-weight: 600;
+    margin: 0;
+    color: var(--dark);
+    /* 2-line max */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.2;
+    height: auto;
+}
+
+.product-meta {
+    display: flex;
+    justify-content: flex-start;
+    /* Left align meta */
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.price {
+    font-size: 0.95rem;
+    /* Smaller price */
+    font-weight: 700;
+    color: var(--primary);
+    width: auto;
+    text-align: left;
+}
+
+.badget {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    width: auto;
+}
+
+.product-action {
+    width: auto;
+    margin-top: 5px;
+}
+
+.product-action .btn {
+    width: 100%;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    /* Smaller button */
+}
+
+/* --- Mobile Grid Layout (2x2) --- */
+@media (max-width: 768px) {
+    .product-list {
+        grid-template-columns: repeat(2, 1fr) !important;
+        /* Force 2 columns */
+        gap: 8px !important;
+        /* Tighter gap on mobile */
+    }
+
+    .product-row {
+        padding: 6px;
+        gap: 6px;
+        /* Actually, 2 cols on mobile with horizontal card might be too squeeze. 
+           Let's try vertical stack for mobile card INTERNALS to fit 2-col grid better, 
+           OR keep horizontal if space allows. 
+           User asked: "product card left side image right side name".
+           In a 2-column grid on mobile (approx 160-180px wide per card), horizontal layout (70px img + text) is tight but possible.
+           Let's stick to the request: "left side image right side name". */
+        flex-direction: row !important;
+        align-items: flex-start !important;
+    }
+
+    .product-thumb {
+        width: 50px !important;
+        /* Even smaller image on mobile */
+        height: 50px !important;
+    }
+
+    .product-info h4 {
+        font-size: 0.8rem !important;
+        -webkit-line-clamp: 2 !important;
+        line-clamp: 2;
+    }
+
+    .price {
+        font-size: 0.85rem !important;
+    }
+
+    .badget {
+        display: none;
+        /* Hide badge on mobile to save space */
+    }
+
+    .product-action .btn {
+        padding: 4px 8px !important;
+        font-size: 0.75rem !important;
+    }
+}
+
+/* --- Pagination (Modern) --- */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.page-btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    background-color: var(--white);
+    color: var(--text);
+    border-radius: 8px;
+    /* Slightly square-ish rounded */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: #eef2ff;
+    /* Very light indigo tint */
+    transform: translateY(-1px);
+}
+
+.page-btn.active {
+    background-color: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+    /* Glow effect for active page */
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    border-color: transparent;
+}
+
+
+/* --- Cart Controls (Modern) --- */
+.cart-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Space out the items nicely */
+    background: #f8fafc;
+    /* Subtle background container */
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    width: fit-content;
+    /* Only take needed width */
+}
+
+.qty-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background-color: var(--white);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    display: flex;
+    /* Perfect center */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* Subtle shadow for button feel */
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.qty-btn:hover {
+    background-color: var(--primary);
+    color: var(--white);
+    transform: translateY(-1px);
+    /* Slight lift */
+}
+
+.qty-btn:active {
+    transform: translateY(0);
+}
+
+/* The number display between buttons */
+.cart-controls span {
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+    color: var(--dark);
+    font-variant-numeric: tabular-nums;
+    /* Monospace numbers */
+}
+
+/* Remove Button (Modern X) */
+.remove-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    /* Muted gray initially */
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    margin-left: 4px;
+    /* Separate from controls a bit */
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.remove-btn:hover {
+    color: var(--danger);
+    background-color: #fee2e2;
+    /* Light red tint on hover */
+}
+
+/* --- Cart Item Layout --- */
+.cart-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+/* Clear Cart Button (Text Only) */
+.btn-clear-cart {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+    padding: 4px;
+}
+
+.btn-clear-cart:hover {
+    color: var(--danger);
+    text-decoration: none;
+}
+
+/* --- Delivery Options (Toggle Style) --- */
+.radio-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.radio-group label {
+    flex: 1;
+    position: relative;
+    cursor: pointer;
+    text-align: center;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    background: var(--white);
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.radio-group input[type="radio"] {
+    display: none;
+    /* Hide default radio */
+}
+
+/* Checked State */
+.radio-group label:has(input:checked) {
+    background-color: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+}
+
+.radio-group label:hover:not(:has(input:checked)) {
+    background-color: #f8fafc;
+    border-color: var(--text-light);
+}
+
+/* Fallback for browsers without :has support (optional, JS preferred but CSS :has is widely supported now)
+   Or use the input:checked + span struct if needed, but the current HTML is <label><input> text </label>
+   so styling the LABEL based on the input inside is tricky without :has. 
+   LUCKILY: Most modern browsers support :has. 
+   If not, we might need to change HTML structure to:
+   <div class="radio-option">
+     <input type="radio" id="pickup">
+     <label for="pickup">Pickup</label>
+   </div>
+   BUT: The user asked to just styling. I'll rely on improvements or :has.
+*/
