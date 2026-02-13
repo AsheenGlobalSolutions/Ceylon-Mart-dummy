@@ -26,6 +26,23 @@ document.addEventListener("DOMContentLoaded", () => {
             loginSection.style.display = "block";
         }
     });
+
+    const imageInput = document.getElementById("productImageFile");
+
+if (imageInput) {
+    imageInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const preview = document.getElementById("imagePreview");
+            preview.src = e.target.result;
+            preview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+    });
+}
 });
 
 function showDashboard() {
@@ -195,8 +212,13 @@ async function saveProduct() {
   const name = document.getElementById("productName").value.trim();
   const price = Number(document.getElementById("productPrice").value);
   const qty = Number(document.getElementById("productQty").value);
-  const image = document.getElementById("productImage").value.trim();
+  const fileInput = document.getElementById("productImageFile");
+ let imageUrl = null;
 
+if (fileInput.files.length > 0) {
+    showLoading("Uploading image...");
+    imageUrl = await uploadImageToCloudinary(fileInput.files[0]);
+}
   if (!name || !Number.isFinite(price) || !Number.isFinite(qty)) {
     Swal.fire({ icon: "warning", title: "Missing details", text: "Please enter name, price and quantity." });
     return;
@@ -206,9 +228,12 @@ async function saveProduct() {
     name,
     price,
     qty,
-    image: image || "",
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
+};
+
+if (imageUrl) {
+    data.image = imageUrl;
+};
 
   try {
     showLoading(docId ? "Updating product..." : "Adding product...");
@@ -241,8 +266,15 @@ function editProduct(docId) {
     document.getElementById("productName").value = p.name || "";
     document.getElementById("productPrice").value = p.price ?? "";
     document.getElementById("productQty").value = p.qty ?? 0;
-    document.getElementById("productImage").value = p.image || "";
-
+    
+    const preview = document.getElementById("imagePreview");
+    if (p.image) {
+        preview.src = p.image;
+        preview.style.display = "block";
+    } else {
+        preview.src = "";
+        preview.style.display = "none";
+    }
     setUpdateMode();
 }
 
@@ -275,7 +307,15 @@ function clearForm() {
     document.getElementById("productName").value = "";
     document.getElementById("productPrice").value = "";
     document.getElementById("productQty").value = "";
-    document.getElementById("productImage").value = "";
+
+    // Clear file input
+    const fileInput = document.getElementById("productImageFile");
+    fileInput.value = "";
+
+    // Hide preview
+    const preview = document.getElementById("imagePreview");
+    preview.src = "";
+    preview.style.display = "none";
 
     setSaveMode();
 }
@@ -304,3 +344,29 @@ function showLoading(title = "Processing...") {
 function hideLoading() {
   Swal.close();
 }
+
+async function uploadImageToCloudinary(file) {
+  const cloudName = "drbpkssnp";
+  const uploadPreset = "ceylon_mart_products";
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    {
+      method: "POST",
+      body: formData
+    }
+  );
+
+  const data = await response.json();
+
+  if (!data.secure_url) {
+    throw new Error("Image upload failed");
+  }
+
+  return data.secure_url;
+}
+
