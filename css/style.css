@@ -299,7 +299,7 @@ tr:hover {
 .footer {
     background: var(--dark);
     color: rgba(255, 255, 255, 0.6);
-    padding: 3rem 0;
+    padding: 1rem 0;
     margin-top: auto;
     text-align: center;
     font-size: 0.9rem;
@@ -698,4 +698,3 @@ tr:hover {
      <label for="pickup">Pickup</label>
    </div>
    BUT: The user asked to just styling. I'll rely on improvements or :has.
-*/

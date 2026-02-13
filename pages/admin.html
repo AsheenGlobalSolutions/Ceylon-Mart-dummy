@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ceylon Mart | Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/admin.js"></script>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <header class="navbar">
+        <div class="container">
+            <a href="../index.html" class="brand">Ceylon Mart</a>
+            <div class="nav-links">
+                <a href="../index.html">Shop</a>
+                <a href="#" class="active">Inventory</a>
+                <a href="sales-dashboard.html">Sales</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Modern Full Screen Loader -->
+        <div id="authLoading" class="loader-overlay">
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <h3>Ceylon Mart</h3>
+                <p>Verifying Admin Access...</p>
+            </div>
+        </div>
+
+        <!-- Login Section -->
+        <div id="loginSection" class="card login-card">
+            <h2>Admin Login</h2>
+            <p style="color:var(--gray); margin-bottom:1.5rem;">Please sign in to continue</p>
+            <form onsubmit="login(); return false;">
+                <input type="text" id="username" placeholder="Username (Email)" autocomplete="username">
+                <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+                <button class="btn" style="width:100%;">Login</button>
+            </form>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" style="display: none;">
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; margin-top: 2rem;">
+                <h1>Dashboard</h1>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+
+            <!-- Add/Edit Form -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <h3>Add / Update Product</h3>
+                <form onsubmit="saveProduct(); return false;">
+                <input type="hidden" id="productId">
+                <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 0;">
+                    <div>
+                        <input type="text" id="productName" placeholder="Product Name">
+                    </div>
+                    <div>
+                        <input type="number" id="productPrice" placeholder="Price (Rs.)">
+                    </div>
+                    <div>
+                        <input type="number" id="productQty" placeholder="Quantity">
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <input type="text" id="productImage" placeholder="Image URL (optional)">
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button id="saveBtn" type="submit" class="btn">Save Product</button>
+                    <button type="button" class="btn btn-outline" onclick="clearForm()" style="margin-left: 0.5rem;">Cancel</button>
+                </div>
+                </form>
+            </div>
+
+            <!-- Product Table -->
+            <div class="card" style="overflow-x: auto;">
+                <h3>Current Inventory</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+                <!-- Pagination Controls -->
+                <div id="pagination" class="pagination" style="justify-content: flex-end; margin-top: 1rem;"></div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Copyright &copy; 2026. Developed with <span style="color: #e25555;">&hearts;</span> by <strong>Asheen
+                    Global Solutions</strong>.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
