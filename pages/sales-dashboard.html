@@ -7,65 +7,35 @@
     <title>Ceylon Mart | Sales Dashboard</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .chart-card {
-            background: var(--white);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-        }
-
-        .stats-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--white);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 0.5rem 0;
-        }
-
-        .stat-label {
-            color: var(--gray);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="../js/firebase-shop.js"></script>
+    <link rel="stylesheet" href="../css/sales-dashboard.css">
 </head>
 
 <body>
 
     <!-- Navigation -->
-    <header class="navbar">
-        <div class="container">
-            <a href="../index.html" class="brand">Ceylon Mart</a>
-            <div class="nav-links">
-                <a href="../index.html">Shop</a>
-                <a href="admin.html">Inventory</a>
-                <a href="#" class="active">Sales</a>
-            </div>
-        </div>
-    </header>
+   <header class="navbar">
+  <div class="container">
+    <a href="../index.html" class="brand">Ceylon Mart</a>
+
+    <!-- ✅ Burger -->
+    <div class="burger">
+      <div class="line1"></div>
+      <div class="line2"></div>
+      <div class="line3"></div>
+    </div>
+
+    <div class="nav-links">
+      <a href="../index.html">Shop</a>
+      <a href="admin.html">Inventory</a>
+      <a href="#" class="active">Sales</a>
+    </div>
+  </div>
+</header>
 
     <main class="container">
 
@@ -78,15 +48,15 @@
         <section class="stats-summary">
             <div class="stat-card">
                 <div class="stat-label">Total Revenue</div>
-                <div class="stat-value">Rs. 125,000</div>
+                <div class="stat-value" id="statRevenue">C$ 0</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Total Orders</div>
-                <div class="stat-value">45</div>
+                <div class="stat-value" id="statOrders">0</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Products Sold</div>
-                <div class="stat-value">120</div>
+                <div class="stat-value" id="statProductsSold">0</div>
             </div>
         </section>
 
@@ -140,173 +110,12 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>Copyright &copy; 2026. Developed with <span style="color: #e25555;">&hearts;</span> by <strong>Asheen
+            <p>Copyright &copy; 2026. Developed with <span style="color: var(--primary);">&hearts;</span> by <strong>Asheen
                     Global Solutions</strong>.</p>
         </div>
     </footer>
 
-    <script>
-        // --- Mock Data Generation ---
-        function generateCharts() {
-            // Daily Sales
-            new Chart(document.getElementById('dailySalesChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Revenue (Rs)',
-                        data: [1200, 1900, 3000, 5000, 2000, 3000, 4500],
-                        backgroundColor: '#4F46E5'
-                    }]
-                }
-            });
-
-            // Weekly Sales
-            new Chart(document.getElementById('weeklySalesChart'), {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'Revenue (Rs)',
-                        data: [15000, 22000, 18000, 25000],
-                        borderColor: '#10B981',
-                        tension: 0.1
-                    }]
-                }
-            });
-
-            // Monthly Sales
-            new Chart(document.getElementById('monthlySalesChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Revenue (Rs)',
-                        data: [50000, 65000, 45000, 80000, 95000, 110000],
-                        backgroundColor: '#F59E0B'
-                    }]
-                }
-            });
-
-            // Most Sold Items
-            new Chart(document.getElementById('topItemsChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Keeri Samba', 'Sugar', 'Tea', 'Dhal'],
-                    datasets: [{
-                        data: [300, 150, 100, 80],
-                        backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444']
-                    }]
-                }
-            });
-        }
-
-        // --- Order Management ---
-        // Mock Orders Data (Since we don't have a real backend yet)
-        let orders = [
-            { id: 101, customer: "John Doe", items: "Sugar (2kg), Tea (100g)", total: 1500, status: "Pending" },
-            { id: 102, customer: "Jane Smith", items: "Keeri Samba (5kg)", total: 2500, status: "Pending" },
-            { id: 103, customer: "Kamal Perera", items: "Dhal (1kg), Sugar (1kg)", total: 900, status: "Paid" }
-        ];
-
-        const ITEMS_PER_PAGE = 20; // Sales Orders Pagination Limit
-        let currentPage = 1;
-
-        function renderOrders() {
-            const tbody = document.getElementById("ordersTableBody");
-            const paginationContainer = document.getElementById("orderPagination");
-            tbody.innerHTML = "";
-
-            if (orders.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No orders found.</td></tr>";
-                paginationContainer.innerHTML = "";
-                return;
-            }
-
-            // Pagination Logic
-            const totalItems = orders.length;
-            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-            if (currentPage > totalPages) currentPage = totalPages || 1;
-            if (currentPage < 1) currentPage = 1;
-
-            const start = (currentPage - 1) * ITEMS_PER_PAGE;
-            const end = start + ITEMS_PER_PAGE;
-            const displayedOrders = orders.slice(start, end);
-
-            displayedOrders.forEach(order => {
-                const statusColor = order.status === 'Paid' ? 'green' : 'orange';
-                const actionBtn = order.status === 'Pending'
-                    ? `<button class="btn btn-sm" onclick="markPaymentComplete(${order.id})">Payment Completed</button>`
-                    : '<span style="color: green; font-weight: bold;">✓ Completed</span>';
-
-                const row = `
-                    <tr>
-                        <td>#${order.id}</td>
-                        <td>${order.customer}</td>
-                        <td>${order.items}</td>
-                        <td>Rs. ${order.total}</td>
-                        <td><span style="color: ${statusColor}; font-weight: bold;">${order.status}</span></td>
-                        <td>${actionBtn}</td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
-
-            // Render Pagination Buttons
-            let paginationHTML = "";
-            if (totalPages > 1) {
-                paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`;
-
-                for (let i = 1; i <= totalPages; i++) {
-                    paginationHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changeOrderPage(${i})">${i}</button>`;
-                }
-
-                paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
-            }
-            paginationContainer.innerHTML = paginationHTML;
-        }
-
-        function changeOrderPage(page) {
-            const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
-            if (page < 1 || page > totalPages) return;
-            currentPage = page;
-            renderOrders();
-        }
-
-        function markPaymentComplete(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (order && order.status === 'Pending') {
-                order.status = 'Paid';
-
-                // --- Stock Update Logic ---
-                // In a real app, we would parse 'items' and deduct specific product IDs.
-                // For this mock, we will just deduct a random quantity from the first product in localStorage to demonstrate the effect.
-                updateStockMock();
-
-                alert(`Payment confirmed for Order #${orderId}. Stock updated.`);
-                renderOrders();
-            }
-        }
-
-        function updateStockMock() {
-            // Deduct stock from LocalStorage to simulate real-time inventory update
-            let products = JSON.parse(localStorage.getItem("products")) || [];
-
-            if (products.length > 0) {
-                // Just deduct 1 from the first product as a demo of the mechanism
-                if (products[0].qty > 0) {
-                    products[0].qty -= 1;
-                    localStorage.setItem("products", JSON.stringify(products));
-                    console.log("Stock updated for demo product:", products[0].name);
-                }
-            }
-        }
-
-        // Initialize
-        generateCharts();
-        renderOrders();
-    </script>
+    <script src="../js/sales-dashboard.js"></script>
 </body>
 
 </html>

@@ -2,30 +2,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    --primary: #6366f1;
-    /* Indigo-500 */
-    --primary-hover: #4f46e5;
-    /* Indigo-600 */
-    --secondary: #10b981;
-    /* Emerald-500 */
-    --accent: #f59e0b;
-    /* Amber-500 */
+    /* 🔥 ORANGE THEME */
+    --primary: #f97316;           /* Orange-500 */
+    --primary-hover: #ea580c;     /* Orange-600 */
+    --secondary: #fb923c;         /* Light orange */
+    --accent: #fdba74;            /* Soft accent orange */
     --danger: #ef4444;
-    /* Red-500 */
+
     --dark: #1e293b;
-    /* Slate-800 */
     --text: #334155;
-    /* Slate-700 */
     --text-light: #64748b;
-    /* Slate-500 */
-    --light: #f1f5f9;
-    /* Slate-100 */
+    --light: #fef7ed;             /* very soft orange tint background */
     --white: #ffffff;
-    --border: #e2e8f0;
-    /* Slate-200 */
+    --border: #fed7aa;            /* soft orange border */
+
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+              0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+                 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
     --radius: 16px;
 }
 
@@ -37,7 +33,7 @@
 
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #f8fafc;
+    background-color: #fff7ed;  /* very soft orange */
     /* Slate-50 */
     color: var(--text);
     display: flex;
@@ -76,8 +72,7 @@ body {
 .btn:hover {
     background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
-}
+box-shadow: 0 4px 8px -1px rgba(249, 115, 22, 0.4);}
 
 .btn:active {
     transform: translateY(0);
@@ -269,7 +264,7 @@ tr:hover {
 .brand {
     font-size: 1.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -295,16 +290,82 @@ tr:hover {
     color: var(--primary);
 }
 
+/* --- Mobile Navigation --- */
+.burger {
+    display: none;
+    cursor: pointer;
+}
+
+.burger div {
+    width: 25px;
+    height: 3px;
+    background-color: var(--text);
+    margin: 5px;
+    transition: all 0.3s ease;
+}
+
+@media screen and (max-width: 768px) {
+    .nav-links {
+        position: absolute;
+        right: 0px;
+        height: calc(100vh - 60px);
+        top: 60px;
+        background-color: var(--white);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: start;
+        padding-top: 3rem;
+        width: 60%;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        z-index: 99;
+        border-left: 1px solid var(--border);
+    }
+
+    .nav-links a {
+        opacity: 1;
+        font-size: 1.1rem;
+        margin: 15px 0;
+    }
+
+    .burger {
+        display: block;
+    }
+}
+
+.nav-active {
+    transform: translateX(0%);
+}
+
+/* Burger Animation */
+.toggle .line1 {
+    transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.toggle .line2 {
+    opacity: 0;
+}
+
+.toggle .line3 {
+    transform: rotate(45deg) translate(-5px, -6px);
+}
+
 /* --- Footer --- */
 .footer {
-    background: var(--dark);
-    color: rgba(255, 255, 255, 0.6);
+    background: var(--white);
+    color: var(--text-light);
     padding: 1rem 0;
     margin-top: auto;
     text-align: center;
     font-size: 0.9rem;
-    border-top: 1px solid var(--border);
+    border-top: 3px solid var(--primary);
 }
+
+.footer strong {
+    color: var(--primary);
+} 
 
 .footer p {
     margin: 0;
@@ -353,7 +414,7 @@ tr:hover {
 
 .product-row:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 8px -1px rgba(249, 115, 22, 0.4);
 }
 
 .product-thumb {
@@ -514,8 +575,7 @@ tr:hover {
 .page-btn:hover:not(:disabled) {
     border-color: var(--primary);
     color: var(--primary);
-    background-color: #eef2ff;
-    /* Very light indigo tint */
+    background-color: #fff1e6;
     transform: translateY(-1px);
 }
 
@@ -697,4 +757,295 @@ tr:hover {
      <input type="radio" id="pickup">
      <label for="pickup">Pickup</label>
    </div>
-   BUT: The user asked to just styling. I'll rely on improvements or :has.
+/* --- WhatsApp Float Button --- */
+.whatsapp-float {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+}
+
+.whatsapp-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #25D366;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.whatsapp-btn:hover {
+    background-color: #128C7E;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px -1px rgba(249, 115, 22, 0.4);
+    color: white;
+    /* Ensure text remains white */
+}
+
+/* Prevent horizontal overflow on small devices */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Make container padding smaller on mobile */
+@media (max-width: 1024px) {
+  .container {
+    padding: 1.25rem;
+  }
+
+  .shop-sidebar {
+    width: 340px;
+  }
+}
+
+/* ---------- TABLET (<= 900px) ----------
+   Sidebar goes below products, grid becomes 2 columns
+*/
+@media (max-width: 900px) {
+  .shop-layout {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .shop-sidebar {
+    width: 100%;
+    position: static;
+    top: auto;
+  }
+
+  .product-list {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Product card spacing */
+  .product-row {
+    padding: 10px;
+  }
+
+  /* Pagination wrap on tablet */
+  .pagination {
+    flex-wrap: wrap;
+    padding: 0 8px;
+  }
+}
+
+/* ---------- MOBILE LARGE (<= 768px) ----------
+   2 columns grid, smaller card internals
+*/
+@media (max-width: 768px) {
+  /* Navbar spacing */
+  .navbar .container {
+    padding: 0 1rem;
+  }
+
+  /* Product grid */
+  .product-list {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Product card becomes tighter */
+  .product-row {
+    padding: 8px;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .product-thumb {
+    width: 54px !important;
+    height: 54px !important;
+  }
+
+  .product-info h4 {
+    font-size: 0.82rem !important;
+    line-height: 1.2;
+  }
+
+  .price {
+    font-size: 0.86rem !important;
+  }
+
+  /* Button becomes compact */
+  .product-action .btn {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    border-radius: 10px;
+  }
+
+  /* Cart section */
+  .cart-section {
+    padding: 1.25rem;
+  }
+
+  .cart-items {
+    max-height: 220px;
+  }
+
+  /* Cart item layout better on mobile */
+  .cart-item {
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .cart-controls {
+    gap: 6px;
+    padding: 3px;
+  }
+
+  .qty-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
+  }
+
+  /* Pagination buttons smaller */
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ---------- MOBILE SMALL (<= 480px) ----------
+   1 column grid (cleanest), cart fields full width
+*/
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem;
+  }
+
+  /* One column products for tiny screens */
+  .product-list {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .product-row {
+    padding: 10px;
+  }
+
+  .product-thumb {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  /* Cart: make totals + text readable */
+  .total {
+    font-size: 1rem;
+  }
+
+  /* Pagination: allow horizontal scroll if many pages */
+  .pagination {
+    justify-content: flex-start;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+  }
+  .pagination::-webkit-scrollbar {
+    height: 6px;
+  }
+  .pagination::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+}
+
+/* ---------- RADIO BUTTONS (No :has dependency) ----------
+   If :has works, great. If not, this still looks okay.
+*/
+.radio-group label {
+  user-select: none;
+}
+
+.radio-group input[type="radio"] {
+  display: inline-block; /* fallback */
+  margin-right: 8px;
+}
+
+/* =================================
+   DELIVERY RADIO GROUP (FINAL)
+================================= */
+
+.radio-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+/* Each option box */
+.radio-group label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;                 /* space between circle + text */
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  background: var(--white);
+  color: var(--text-light);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+/* Hide default browser radio style */
+.radio-group input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 12px;              /* 🔥 smaller outer circle */
+  height: 12px;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+
+  display: grid;
+  place-content: center;
+  margin: 0;
+  flex: 0 0 auto;
+  transition: border 0.2s ease;
+}
+
+/* Inner dot */
+.radio-group input[type="radio"]::before {
+  content: "";
+  width: 8px;               /* 🔥 smaller inner dot */
+  height: 8px;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.15s ease;
+  background: var(--primary);
+}
+
+/* When checked */
+.radio-group input[type="radio"]:checked {
+  border-color: var(--primary);
+}
+
+.radio-group input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+
+/* Active selected box styling */
+.radio-group label:has(input:checked) {
+  background-color: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Hover effect */
+.radio-group label:hover:not(:has(input:checked)) {
+  background-color: #f8fafc;
+  border-color: var(--text-light);
+}

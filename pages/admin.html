@@ -23,6 +23,13 @@
     <header class="navbar">
         <div class="container">
             <a href="../index.html" class="brand">Ceylon Mart</a>
+
+            <!-- Mobile Menu Button -->
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
             <div class="nav-links">
                 <a href="../index.html">Shop</a>
                 <a href="#" class="active">Inventory</a>
@@ -66,26 +73,27 @@
             <div class="card" style="margin-bottom: 2rem;">
                 <h3>Add / Update Product</h3>
                 <form onsubmit="saveProduct(); return false;">
-                <input type="hidden" id="productId">
-                <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 0;">
-                    <div>
-                        <input type="text" id="productName" placeholder="Product Name">
+                    <input type="hidden" id="productId">
+                    <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 0;">
+                        <div>
+                            <input type="text" id="productName" placeholder="Product Name">
+                        </div>
+                        <div>
+                            <input type="number" id="productPrice" placeholder="Price (CAD)">
+                        </div>
+                        <div>
+                            <input type="number" id="productQty" placeholder="Quantity">
+                        </div>
                     </div>
-                    <div>
-                        <input type="number" id="productPrice" placeholder="Price (Rs.)">
+                    <div style="margin-top: 1rem;">
+                        <input type="file" id="productImageFile" accept="image/*">
+                        <img id="imagePreview" style="max-width:100px; display:none; margin-top:10px;">
                     </div>
-                    <div>
-                        <input type="number" id="productQty" placeholder="Quantity">
+                    <div style="margin-top: 1rem;">
+                        <button id="saveBtn" type="submit" class="btn">Save Product</button>
+                        <button type="button" class="btn btn-outline" onclick="clearForm()"
+                            style="margin-left: 0.5rem;">Cancel</button>
                     </div>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <input type="file" id="productImageFile" accept="image/*">
-                    <img id="imagePreview" style="max-width:100px; display:none; margin-top:10px;">   
-                </div>
-                <div style="margin-top: 1rem;">
-                    <button id="saveBtn" type="submit" class="btn">Save Product</button>
-                    <button type="button" class="btn btn-outline" onclick="clearForm()" style="margin-left: 0.5rem;">Cancel</button>
-                </div>
                 </form>
             </div>
 
@@ -117,7 +125,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>Copyright &copy; 2026. Developed with <span style="color: #e25555;">&hearts;</span> by <strong>Asheen
+            <p>Copyright &copy; 2026. Developed with <span style="color: var(--primary);">&hearts;</span> by <strong>Asheen
                     Global Solutions</strong>.</p>
         </div>
     </footer>

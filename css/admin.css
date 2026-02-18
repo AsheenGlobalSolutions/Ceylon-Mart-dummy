@@ -1,73 +1,187 @@
- .login-card {
-     max-width: 400px;
-     margin: 100px auto;
-     text-align: center;
- }
+/* ================================
+   ADMIN.CSS (Ceylon Mart Admin)
+   Only admin page styles here
+================================ */
 
- /* hide both until auth check completes */
- #loginSection,
- #dashboardSection {
-     display: none;
- }
+/* Login card */
+.login-card {
+  max-width: 420px;
+  margin: 90px auto;
+  text-align: center;
+}
 
- /* --- Modern Content Loader --- */
- #authLoading {
-     /* Positioned in-flow to keep navbar/footer visible */
-     width: 100%;
-     min-height: 60vh;
-     /* Ensure it takes up substantial vertical space */
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     text-align: center;
+/* Hide both until auth check completes */
+#loginSection,
+#dashboardSection {
+  display: none;
+}
 
-     /* Reset old card styles */
-     max-width: none;
-     margin: 0;
-     padding: 0;
-     border-radius: 0;
-     box-shadow: none;
-     background: transparent;
- }
+/* ---------- Loader ---------- */
+#authLoading {
+  width: 100%;
+  min-height: 60vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 
- .loader-content {
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     gap: 1.5rem;
- }
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
 
- .loader-content h3 {
-     margin: 0;
-     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-     -webkit-background-clip: text;
-     background-clip: text;
-     -webkit-text-fill-color: transparent;
-     font-size: 1.5rem;
-     font-weight: 800;
- }
+.loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
 
- .loader-content p {
-     color: var(--text-light);
-     font-size: 0.95rem;
-     margin: 0;
- }
+.loader-content h3 {
+  margin: 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
 
- .spinner {
-     width: 50px;
-     height: 50px;
-     border: 4px solid #e2e8f0;
-     border-top: 4px solid var(--primary);
-     border-radius: 50%;
-     animation: spin 1s linear infinite;
- }
+.loader-content p {
+  color: var(--text-light);
+  font-size: 0.95rem;
+  margin: 0;
+}
 
- @keyframes spin {
-     0% {
-         transform: rotate(0deg);
-     }
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
 
-     100% {
-         transform: rotate(360deg);
-     }
- }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ---------- Admin Form Helpers ---------- */
+#imagePreview {
+  max-width: 120px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+/* Make the dashboard cards tighter on small screens */
+#dashboardSection .card {
+  margin-bottom: 1.5rem;
+}
+
+/* Table wrapper already has overflow-x inline in HTML,
+   but this makes it safe everywhere */
+#dashboardSection .card[style*="overflow-x"] {
+  overflow-x: auto !important;
+}
+
+/* Optional: reduce table button spacing on desktop */
+#dashboardSection td button.btn {
+  white-space: nowrap;
+}
+
+/* ================================
+   RESPONSIVE (Tablet + Mobile)
+================================ */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .login-card {
+    margin: 60px auto;
+  }
+}
+
+/* Tablet + Mobile (<= 900px)
+   Form grid 3 columns -> 1 column
+*/
+@media (max-width: 900px) {
+  /* Your form uses: <div class="grid" style="grid-template-columns: repeat(3, 1fr); ..."> */
+  /* Inline style has higher priority, so we FORCE override with !important */
+  #dashboardSection .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Make buttons stack nicely */
+  #dashboardSection form button {
+    width: 100%;
+  }
+
+  /* Cancel button (inline margin-left in HTML) */
+  #dashboardSection form .btn-outline {
+    margin-left: 0 !important;
+    margin-top: 10px;
+  }
+}
+
+/* Mobile (<= 768px) */
+@media (max-width: 768px) {
+
+  /* Login card */
+  .login-card {
+    max-width: 100%;
+    margin: 35px auto;
+    padding: 1.5rem;
+  }
+
+  /* Dashboard header (Dashboard title + Logout button)
+     In your HTML it's the first <div> inside #dashboardSection
+  */
+  #dashboardSection > div:first-child {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  #dashboardSection > div:first-child .btn {
+    width: 100%;
+  }
+
+  /* Table: prevent columns from squishing too much */
+  #dashboardSection table {
+    min-width: 720px;
+  }
+
+  /* Pagination: allow scroll on mobile */
+  #pagination.pagination {
+    justify-content: flex-start !important;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+  }
+
+  #pagination.pagination::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  #pagination.pagination::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+}
+
+/* Very small phones (<= 480px) */
+@media (max-width: 480px) {
+  /* Smaller action buttons */
+  #dashboardSection td button.btn {
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Slightly smaller loader text */
+  .loader-content h3 {
+    font-size: 1.25rem;
+  }
+}
