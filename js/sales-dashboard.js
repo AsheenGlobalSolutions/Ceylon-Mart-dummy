@@ -57,7 +57,7 @@ function startRealtimeOrders() {
 
         if (tbody) {
           tbody.innerHTML =
-            "<tr><td colspan='6' style='text-align:center;color:red;'>Realtime listener failed</td></tr>";
+            "<tr><td colspan='8' style='text-align:center;'>No orders found.</td></tr>";
         }
 
         await Swal.fire({
@@ -133,7 +133,7 @@ function renderOrders() {
 
   if (orders.length === 0) {
     tbody.innerHTML =
-      "<tr><td colspan='6' style='text-align:center;'>No orders found.</td></tr>";
+      "<tr><td colspan='8' style='text-align:center;color:red;'>Realtime listener failed</td></tr>";
     paginationContainer.innerHTML = "";
     updateStatsSummary();
     return;
@@ -150,55 +150,62 @@ function renderOrders() {
   const displayed = orders.slice(start, end);
 
   displayed.forEach((order) => {
-    const status = order.status || "Pending";
-    const statusColor =
-      status === "Paid" ? "green" : status === "Cancelled" ? "#999" : "orange";
+  const status = order.status || "Pending";
+  const statusColor =
+    status === "Paid" ? "green" : status === "Cancelled" ? "#999" : "orange";
 
-    const customerName = order.customer?.name || "Unknown";
-    const itemsText =
-      (order.items || [])
-        .slice(0, 3)
-        .map((i) => `${i.name} (${i.qty})`)
-        .join(", ") + ((order.items || []).length > 3 ? "..." : "");
+  const customerName = order.customer?.name || "Unknown";
 
-    const total = Number(order.total ?? 0);
+  const orderType = order.deliveryType || "-";
+  const address =
+    orderType === "Delivery" ? (order.customer?.address || "-") : "-";
 
-    let actionBtn = "-";
+  const itemsText =
+    (order.items || [])
+      .slice(0, 3)
+      .map((i) => `${i.name} (${i.qty})`)
+      .join(", ") + ((order.items || []).length > 3 ? "..." : "");
 
-    if (status === "Paid") {
-      actionBtn = '<span style="color: green; font-weight: bold;">✓ Paid</span>';
-    } else if (status === "Cancelled") {
-      actionBtn = '<span style="color: #999; font-weight: bold;">✕ Cancelled</span>';
-    } else if (status === "Reserved" || status === "Pending") {
-      if (order.stockApplied === true) {
-        actionBtn = `
-          <div style="display:flex; flex-direction:column; gap:8px;">
+  // ✅ FIX: use grandTotal (fallback for old orders)
+  const total = Number(order.grandTotal ?? order.total ?? 0);
+
+  let actionBtn = "-";
+
+  if (status === "Paid") {
+    actionBtn = '<span style="color: green; font-weight: bold;">✓ Paid</span>';
+  } else if (status === "Cancelled") {
+    actionBtn = '<span style="color: #999; font-weight: bold;">✕ Cancelled</span>';
+  } else if (status === "Reserved" || status === "Pending") {
+    if (order.stockApplied === true) {
+      actionBtn = `
+        <div style="display:flex; flex-direction:column; gap:8px;">
           <button class="btn btn-sm" onclick="markAsPaid('${order.id}')">Mark Paid</button>
-          <button class="btn btn-sm" style="margin-left:6px;background:#999;" onclick="cancelAndRestore('${order.id}')">Cancel</button>
-          </div>
-        `;
-      } else {
-        // auto applies, but keep button as fallback
-        actionBtn = `
-          <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-sm" style="background:#999;" onclick="cancelAndRestore('${order.id}')">Cancel</button>
+        </div>
+      `;
+    } else {
+      actionBtn = `
+        <div style="display:flex; flex-direction:column; gap:8px;">
           <button class="btn btn-sm" onclick="applyStockOnce('${order.id}')">Apply Stock</button>
-          <button class="btn btn-sm" style="margin-left:6px;background:#999;" onclick="cancelAndRestore('${order.id}')">Cancel</button>
-          </div>
-        `;
-      }
+          <button class="btn btn-sm" style="background:#999;" onclick="cancelAndRestore('${order.id}')">Cancel</button>
+        </div>
+      `;
     }
+  }
 
-    tbody.innerHTML += `
-      <tr>
-        <td>#${order.readableId || order.id}</td>
-        <td>${escapeHtml(customerName)}</td>
-        <td>${escapeHtml(itemsText)}</td>
-        <td>C$ ${Math.round(total)}</td>
-        <td><span style="color:${statusColor}; font-weight:bold;">${status}</span></td>
-        <td>${actionBtn}</td>
-      </tr>
-    `;
-  });
+  tbody.innerHTML += `
+    <tr>
+      <td>#${order.readableId || order.id}</td>
+      <td>${escapeHtml(customerName)}</td>
+      <td>${escapeHtml(orderType)}</td>
+      <td>${escapeHtml(address)}</td>
+      <td>${escapeHtml(itemsText)}</td>
+      <td>C$ ${Math.round(total)}</td>
+      <td><span style="color:${statusColor}; font-weight:bold;">${status}</span></td>
+      <td>${actionBtn}</td>
+    </tr>
+  `;
+});
 
   let paginationHTML = "";
   if (totalPages > 1) {
