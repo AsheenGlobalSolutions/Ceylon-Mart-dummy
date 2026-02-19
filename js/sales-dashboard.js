@@ -520,7 +520,7 @@ async function generateChartsFromFirestore() {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
     if (!d || d < sixMonthsAgo) return;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    monthlyRevenueMap.set(key, (monthlyRevenueMap.get(key) || 0) + Number(o.total ?? 0));
+    monthlyRevenueMap.set(key, (monthlyRevenueMap.get(key) || 0) + Number(o.grandTotal ?? o.total ?? 0))
   });
 
   const monthlyLabels = [];
