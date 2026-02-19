@@ -451,8 +451,10 @@ async function cancelAndRestore(orderId) {
 function updateStatsSummary() {
   const paidOrders = orders.filter((o) => (o.status || "Pending") === "Paid");
 
-  const revenue = paidOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
-  const totalOrders = orders.length;
+const revenue = paidOrders.reduce(
+  (sum, o) => sum + Number(o.grandTotal ?? o.total ?? 0),
+  0
+);  const totalOrders = orders.length;
   const productsSold = paidOrders.reduce((sum, o) => {
     const items = o.items || [];
     return sum + items.reduce((s, it) => s + Number(it.qty ?? 0), 0);
@@ -492,7 +494,7 @@ async function generateChartsFromFirestore() {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
     if (!d || d < sevenDaysAgo) return;
     const idx = (d.getDay() + 6) % 7;
-    dailyRevenue[idx] += Number(o.total ?? 0);
+    dailyRevenue[idx] += Number(o.grandTotal ?? o.total ?? 0)
   });
 
   const weeklyLabels = ["Week 1", "Week 2", "Week 3", "Week 4"];
@@ -506,7 +508,7 @@ async function generateChartsFromFirestore() {
     const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
     const bucket = Math.min(3, Math.floor(diffDays / 7));
     const idx = 3 - bucket;
-    weeklyRevenue[idx] += Number(o.total ?? 0);
+    weeklyRevenue[idx] += Number(o.grandTotal ?? o.total ?? 0)
   });
 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
