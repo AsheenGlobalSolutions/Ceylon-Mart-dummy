@@ -1,49 +1,87 @@
-// sales-dashboard.js
+// sales-dashboard.js (REALTIME VERSION)
 
-if (!window.ordersCol || !window.productsCol) {
-  console.error("ordersCol/productsCol not defined. Check firebase-shop.js");
+// --------------------
+// Safety check: Firestore refs must exist from firebase-shop.js
+// --------------------
+if (!window.db || !window.ordersCol || !window.productsCol) {
+  console.error("db/ordersCol/productsCol not defined. Check firebase-shop.js");
 }
 
+// --------------------
+// Globals
+// --------------------
 let orders = [];
+let products = [];
+
 const ITEMS_PER_PAGE = 20;
 let currentPage = 1;
 
+let unsubscribeOrders = null;
+let unsubscribeProducts = null;
+
+// Charts
+let dailyChart, weeklyChart, monthlyChart, topItemsChart;
+
 // --------------------
-// Load Orders (recent first)
+// Realtime: Orders
 // --------------------
-async function loadOrders() {
+function startRealtimeOrders() {
   const tbody = document.getElementById("ordersTableBody");
 
-  try {
-    showLoading("Loading orders...");
+  // stop previous listener (if called twice)
+  if (unsubscribeOrders) unsubscribeOrders();
 
-    const snap = await ordersCol.orderBy("createdAt", "desc").limit(500).get();
-    orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  showLoading("Listening to orders...");
 
-    renderOrders();
-    await generateChartsFromFirestore();
+  unsubscribeOrders = ordersCol
+    .orderBy("createdAt", "desc")
+    .limit(500)
+    .onSnapshot(
+      async (snap) => {
+        orders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    closeLoading();
-    toastSuccess("Orders loaded");
+        renderOrders();
+        updateStatsSummary();
+        await generateChartsFromFirestore();
 
-  } catch (e) {
-    console.error(e);
-    closeLoading();
+        closeLoading();
+      },
+      async (error) => {
+        console.error("Realtime orders listener error:", error);
+        closeLoading();
 
-    if (tbody) {
-      tbody.innerHTML =
-        "<tr><td colspan='6' style='text-align:center;color:red;'>Failed to load orders</td></tr>";
-    }
+        if (tbody) {
+          tbody.innerHTML =
+            "<tr><td colspan='6' style='text-align:center;color:red;'>Realtime listener failed</td></tr>";
+        }
 
-    await Swal.fire({
-      icon: "error",
-      title: "Failed to load orders",
-      text: e.message || "Something went wrong",
-      confirmButtonText: "OK"
-    });
-  }
+        await Swal.fire({
+          icon: "error",
+          title: "Realtime failed",
+          text: error.message || "Could not listen to orders changes",
+          confirmButtonText: "OK",
+        });
+      }
+    );
 }
 
+// --------------------
+// Realtime: Products (OPTIONAL but useful)
+// --------------------
+function startRealtimeProducts() {
+  // stop previous listener
+  if (unsubscribeProducts) unsubscribeProducts();
+
+  unsubscribeProducts = productsCol.onSnapshot(
+    (snap) => {
+      products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      // (Optional) if you ever want to show stock widgets in dashboard, you already have products[]
+    },
+    (error) => {
+      console.error("Realtime products listener error:", error);
+    }
+  );
+}
 
 // --------------------
 // Table Rendering + Pagination
@@ -51,10 +89,14 @@ async function loadOrders() {
 function renderOrders() {
   const tbody = document.getElementById("ordersTableBody");
   const paginationContainer = document.getElementById("orderPagination");
+
+  if (!tbody || !paginationContainer) return;
+
   tbody.innerHTML = "";
 
   if (orders.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No orders found.</td></tr>";
+    tbody.innerHTML =
+      "<tr><td colspan='6' style='text-align:center;'>No orders found.</td></tr>";
     paginationContainer.innerHTML = "";
     updateStatsSummary();
     return;
@@ -70,28 +112,30 @@ function renderOrders() {
   const end = start + ITEMS_PER_PAGE;
   const displayed = orders.slice(start, end);
 
-  displayed.forEach(order => {
+  displayed.forEach((order) => {
     const status = order.status || "Pending";
     const statusColor = status === "Paid" ? "green" : "orange";
 
     const customerName = order.customer?.name || "Unknown";
-    const itemsText = (order.items || [])
-      .slice(0, 3)
-      .map(i => `${i.name} (${i.qty})`)
-      .join(", ") + ((order.items || []).length > 3 ? "..." : "");
+    const itemsText =
+      (order.items || [])
+        .slice(0, 3)
+        .map((i) => `${i.name} (${i.qty})`)
+        .join(", ") + ((order.items || []).length > 3 ? "..." : "");
 
     const total = Number(order.total ?? 0);
 
-    const actionBtn = status === "Pending"
-      ? `<button class="btn btn-sm" onclick="markPaymentComplete('${order.id}')">Payment Completed</button>`
-      : '<span style="color: green; font-weight: bold;">✓ Completed</span>';
+    const actionBtn =
+      status === "Pending"
+        ? `<button class="btn btn-sm" onclick="markPaymentComplete('${order.id}')">Payment Completed</button>`
+        : '<span style="color: green; font-weight: bold;">✓ Completed</span>';
 
     const row = `
       <tr>
-       <td>#${order.readableId || order.id}</td>
+        <td>#${order.readableId || order.id}</td>
         <td>${escapeHtml(customerName)}</td>
         <td>${escapeHtml(itemsText)}</td>
-        <td>C$ ${total}</td>
+        <td>C$ ${Math.round(total)}</td>
         <td><span style="color:${statusColor}; font-weight:bold;">${status}</span></td>
         <td>${actionBtn}</td>
       </tr>
@@ -102,15 +146,21 @@ function renderOrders() {
   // Pagination buttons
   let paginationHTML = "";
   if (totalPages > 1) {
-    paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage - 1})" ${currentPage === 1 ? "disabled" : ""}>Prev</button>`;
+    paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage - 1})" ${
+      currentPage === 1 ? "disabled" : ""
+    }>Prev</button>`;
+
     for (let i = 1; i <= totalPages; i++) {
-      paginationHTML += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="changeOrderPage(${i})">${i}</button>`;
+      paginationHTML += `<button class="page-btn ${
+        i === currentPage ? "active" : ""
+      }" onclick="changeOrderPage(${i})">${i}</button>`;
     }
-    paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage + 1})" ${currentPage === totalPages ? "disabled" : ""}>Next</button>`;
+
+    paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage + 1})" ${
+      currentPage === totalPages ? "disabled" : ""
+    }>Next</button>`;
   }
   paginationContainer.innerHTML = paginationHTML;
-
-  updateStatsSummary();
 }
 
 function changeOrderPage(page) {
@@ -132,7 +182,7 @@ async function markPaymentComplete(orderId) {
       showCancelButton: true,
       confirmButtonText: "Yes, Confirm",
       cancelButtonText: "Cancel",
-      reverseButtons: true
+      reverseButtons: true,
     });
 
     if (!confirm.isConfirmed) {
@@ -145,7 +195,6 @@ async function markPaymentComplete(orderId) {
     const orderRef = ordersCol.doc(orderId);
 
     await db.runTransaction(async (tx) => {
-
       // ---------- PHASE 1: READS ONLY ----------
       const orderSnap = await tx.get(orderRef);
       if (!orderSnap.exists) throw new Error("Order not found");
@@ -172,7 +221,7 @@ async function markPaymentComplete(orderId) {
         throw new Error("Order items are invalid (missing productId/qty)");
       }
 
-      const productRefs = [...needByProductId.keys()].map(id => productsCol.doc(id));
+      const productRefs = [...needByProductId.keys()].map((id) => productsCol.doc(id));
 
       const productSnaps = [];
       for (const ref of productRefs) productSnaps.push(await tx.get(ref));
@@ -211,11 +260,10 @@ async function markPaymentComplete(orderId) {
 
       tx.update(orderRef, {
         status: "Paid",
-        paidAt: firebase.firestore.FieldValue.serverTimestamp()
+        paidAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
 
-      // Attach lowStockAfter to transaction scope by return pattern not possible,
-      // so we'll store it on window for later display after transaction:
+      // store for after-transaction popup
       window.__lowStockAfter = lowStockAfter;
     });
 
@@ -227,7 +275,7 @@ async function markPaymentComplete(orderId) {
 
     if (lowStock.length > 0) {
       const html = lowStock
-        .map(x => `<div style="text-align:left;">• ${escapeHtml(x.name)} — <b>${x.qty}</b> left</div>`)
+        .map((x) => `<div style="text-align:left;">• ${escapeHtml(x.name)} — <b>${x.qty}</b> left</div>`)
         .join("");
 
       await Swal.fire({
@@ -235,18 +283,19 @@ async function markPaymentComplete(orderId) {
         title: "Payment Confirmed ✅",
         html: `<div style="margin-bottom:8px;">Order #${orderId} marked as Paid.</div>
                <div><b>Low stock alert:</b></div>${html}`,
-        confirmButtonText: "OK"
+        confirmButtonText: "OK",
       });
     } else {
       await Swal.fire({
         icon: "success",
         title: "Payment Confirmed ✅",
         text: `Order #${orderId} marked as Paid. Stock updated.`,
-        confirmButtonText: "OK"
+        confirmButtonText: "OK",
       });
     }
 
-    await loadOrders();
+    // ✅ IMPORTANT: no need loadOrders() anymore.
+    // Realtime listener will update table/stats/charts automatically.
 
   } catch (e) {
     console.error(e);
@@ -256,7 +305,7 @@ async function markPaymentComplete(orderId) {
       icon: "error",
       title: "Payment Failed",
       text: e.message || "Failed to mark payment complete.",
-      confirmButtonText: "OK"
+      confirmButtonText: "OK",
     });
   }
 }
@@ -265,9 +314,7 @@ async function markPaymentComplete(orderId) {
 // Stats summary (top cards)
 // --------------------
 function updateStatsSummary() {
-  // If you want, you can replace your static HTML values with ids:
-  // <div class="stat-value" id="statRevenue">C$ 0</div> ...
-  const paidOrders = orders.filter(o => (o.status || "Pending") === "Paid");
+  const paidOrders = orders.filter((o) => (o.status || "Pending") === "Paid");
 
   const revenue = paidOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
   const totalOrders = orders.length;
@@ -276,7 +323,6 @@ function updateStatsSummary() {
     return sum + items.reduce((s, it) => s + Number(it.qty ?? 0), 0);
   }, 0);
 
-  // If you add these IDs in HTML, these lines work:
   const revEl = document.getElementById("statRevenue");
   const ordEl = document.getElementById("statOrders");
   const soldEl = document.getElementById("statProductsSold");
@@ -289,24 +335,28 @@ function updateStatsSummary() {
 // --------------------
 // Charts from Firestore data
 // --------------------
-let dailyChart, weeklyChart, monthlyChart, topItemsChart;
-
 async function generateChartsFromFirestore() {
   // Use only PAID orders for revenue charts
-  const paid = orders.filter(o => (o.status || "Pending") === "Paid");
+  const paid = orders.filter((o) => (o.status || "Pending") === "Paid");
+
+  const dailyCanvas = document.getElementById("dailySalesChart");
+  const weeklyCanvas = document.getElementById("weeklySalesChart");
+  const monthlyCanvas = document.getElementById("monthlySalesChart");
+  const topCanvas = document.getElementById("topItemsChart");
+  if (!dailyCanvas || !weeklyCanvas || !monthlyCanvas || !topCanvas) return;
 
   // Convert Firestore timestamp -> JS Date safely
-  const toDate = (ts) => ts?.toDate ? ts.toDate() : null;
+  const toDate = (ts) => (ts?.toDate ? ts.toDate() : null);
 
   // ---- Daily (last 7 days) ----
-  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  const dailyRevenue = [0,0,0,0,0,0,0];
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dailyRevenue = [0, 0, 0, 0, 0, 0, 0];
 
   const now = new Date();
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(now.getDate() - 6);
 
-  paid.forEach(o => {
+  paid.forEach((o) => {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
     if (!d) return;
     if (d < sevenDaysAgo) return;
@@ -317,35 +367,36 @@ async function generateChartsFromFirestore() {
   });
 
   // ---- Weekly (last 4 weeks) ----
-  const weeklyLabels = ["Week 1","Week 2","Week 3","Week 4"];
-  const weeklyRevenue = [0,0,0,0];
+  const weeklyLabels = ["Week 1", "Week 2", "Week 3", "Week 4"];
+  const weeklyRevenue = [0, 0, 0, 0];
+
   const fourWeeksAgo = new Date(now);
   fourWeeksAgo.setDate(now.getDate() - 27);
 
-  paid.forEach(o => {
+  paid.forEach((o) => {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
     if (!d) return;
     if (d < fourWeeksAgo) return;
 
     const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
     const bucket = Math.min(3, Math.floor(diffDays / 7)); // 0..3
-    // show from oldest->newest: Week1 oldest
-    const idx = 3 - bucket;
+    const idx = 3 - bucket; // oldest->newest
     weeklyRevenue[idx] += Number(o.total ?? 0);
   });
 
   // ---- Monthly (last 6 months) ----
-  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthlyRevenueMap = new Map(); // "YYYY-MM" -> sum
+
   const sixMonthsAgo = new Date(now);
   sixMonthsAgo.setMonth(now.getMonth() - 5);
 
-  paid.forEach(o => {
+  paid.forEach((o) => {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
     if (!d) return;
     if (d < sixMonthsAgo) return;
 
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     monthlyRevenueMap.set(key, (monthlyRevenueMap.get(key) || 0) + Number(o.total ?? 0));
   });
 
@@ -354,76 +405,86 @@ async function generateChartsFromFirestore() {
   for (let i = 5; i >= 0; i--) {
     const dt = new Date(now);
     dt.setMonth(now.getMonth() - i);
-    const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
     monthlyLabels.push(monthNames[dt.getMonth()]);
     monthlyRevenue.push(monthlyRevenueMap.get(key) || 0);
   }
 
   // ---- Top items (by qty) ----
   const itemQty = new Map(); // name -> qty
-  paid.forEach(o => {
-    (o.items || []).forEach(it => {
+  paid.forEach((o) => {
+    (o.items || []).forEach((it) => {
       const name = it.name || "Unknown";
       const qty = Number(it.qty ?? 0);
       itemQty.set(name, (itemQty.get(name) || 0) + qty);
     });
   });
 
-  const top = [...itemQty.entries()]
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, 6);
+  const top = [...itemQty.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const topLabels = top.map((x) => x[0]);
+  const topData = top.map((x) => x[1]);
 
-  const topLabels = top.map(x => x[0]);
-  const topData = top.map(x => x[1]);
-
-  // Render charts (destroy old first)
+  // Destroy old charts
   if (dailyChart) dailyChart.destroy();
   if (weeklyChart) weeklyChart.destroy();
   if (monthlyChart) monthlyChart.destroy();
   if (topItemsChart) topItemsChart.destroy();
 
-  dailyChart = new Chart(document.getElementById('dailySalesChart'), {
-    type: 'bar',
-    data: { labels: days, datasets: [{ label: 'Revenue (CAD)', data: dailyRevenue }] }
+  // Render charts
+  dailyChart = new Chart(dailyCanvas, {
+    type: "bar",
+    data: { labels: days, datasets: [{ label: "Revenue (CAD)", data: dailyRevenue }] },
   });
 
-  weeklyChart = new Chart(document.getElementById('weeklySalesChart'), {
-    type: 'line',
-    data: { labels: weeklyLabels, datasets: [{ label: 'Revenue (CAD)', data: weeklyRevenue, tension: 0.1 }] }
+  weeklyChart = new Chart(weeklyCanvas, {
+    type: "line",
+    data: { labels: weeklyLabels, datasets: [{ label: "Revenue (CAD)", data: weeklyRevenue, tension: 0.1 }] },
   });
 
-  monthlyChart = new Chart(document.getElementById('monthlySalesChart'), {
-    type: 'bar',
-    data: { labels: monthlyLabels, datasets: [{ label: 'Revenue (CAD)', data: monthlyRevenue }] }
+  monthlyChart = new Chart(monthlyCanvas, {
+    type: "bar",
+    data: { labels: monthlyLabels, datasets: [{ label: "Revenue (CAD)", data: monthlyRevenue }] },
   });
 
-  topItemsChart = new Chart(document.getElementById('topItemsChart'), {
-    type: 'doughnut',
-    data: { labels: topLabels, datasets: [{ data: topData }] }
+  topItemsChart = new Chart(topCanvas, {
+    type: "doughnut",
+    data: { labels: topLabels, datasets: [{ data: topData }] },
   });
 }
 
 // --------------------
+// Helpers
+// --------------------
 function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, s => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  return String(str).replace(/[&<>"']/g, (s) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   }[s]));
 }
 
+// --------------------
+// Auth Gate + Start Realtime
+// --------------------
 firebase.auth().onAuthStateChanged(async (user) => {
   if (!user) {
     await Swal.fire({
       icon: "info",
       title: "Login required",
       text: "Please login to access the Sales Dashboard.",
-      confirmButtonText: "Go to Login"
+      confirmButtonText: "Go to Login",
     });
     window.location.href = "admin.html";
     return;
   }
 
   toastSuccess("Welcome back!");
-  loadOrders();
+
+  // ✅ start realtime listeners
+  startRealtimeProducts(); // optional but useful
+  startRealtimeOrders();
 });
 
 // --------------------
@@ -438,17 +499,15 @@ const Toast = Swal.mixin({
   didOpen: (toast) => {
     toast.addEventListener("mouseenter", Swal.stopTimer);
     toast.addEventListener("mouseleave", Swal.resumeTimer);
-  }
+  },
 });
 
 function toastSuccess(msg) {
   Toast.fire({ icon: "success", title: msg });
 }
-
 function toastError(msg) {
   Toast.fire({ icon: "error", title: msg });
 }
-
 function toastInfo(msg) {
   Toast.fire({ icon: "info", title: msg });
 }
@@ -458,15 +517,16 @@ function showLoading(title = "Loading...") {
     title,
     allowOutsideClick: false,
     allowEscapeKey: false,
-    didOpen: () => Swal.showLoading()
+    didOpen: () => Swal.showLoading(),
   });
 }
-
 function closeLoading() {
   Swal.close();
 }
 
+// --------------------
 // Burger Menu Logic (Sales Dashboard)
+// --------------------
 document.addEventListener("DOMContentLoaded", () => {
   const burger = document.querySelector(".burger");
   const nav = document.querySelector(".nav-links");
@@ -477,4 +537,12 @@ document.addEventListener("DOMContentLoaded", () => {
       burger.classList.toggle("toggle");
     });
   }
+});
+
+// --------------------
+// Cleanup listeners when leaving page
+// --------------------
+window.addEventListener("beforeunload", () => {
+  if (unsubscribeOrders) unsubscribeOrders();
+  if (unsubscribeProducts) unsubscribeProducts();
 });
