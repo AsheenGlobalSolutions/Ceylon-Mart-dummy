@@ -51,19 +51,18 @@ function listenProductsRealtime() {
 
   if (unsubscribeShopProducts) unsubscribeShopProducts();
 
-  unsubscribeShopProducts = productsCol
-    .orderBy("createdAt", "desc")
-    .onSnapshot(
-      (snap) => {
-        products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderProducts();
-        syncCartWithLatestStock();
-      },
-      (err) => {
-        console.error(err);
-        container.innerHTML = `<p style="text-align:center; width:100%; color:red;">Failed to load products</p>`;
-      }
-    );
+  unsubscribeShopProducts = productsCol.onSnapshot(
+  (snap) => {
+    products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // optional sort in JS (if you want newest first)
+    products.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    renderProducts();
+    syncCartWithLatestStock();
+  },
+  (err) => {
+    console.error(err);
+  }
+);
 }
 
 function syncCartWithLatestStock() {
