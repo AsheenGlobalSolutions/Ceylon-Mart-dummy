@@ -12,8 +12,13 @@ emailjs.init(PUBLIC_KEY);
 // Firestore refs
 // --------------------
 if (!window.db || !window.productsCol || !window.ordersCol) {
-  console.error("db/productsCol/ordersCol not defined. Check firebase-shop.js");
+console.log("db/productsCol/ordersCol not defined. Check firebase-shop.js");
 }
+
+// --------------------
+// Delivery charge config
+// --------------------
+const DELIVERY_CHARGE = 450; // <-- sample fixed price (change this anytime)
 
 let products = [];
 let cart = [];
@@ -29,13 +34,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const deliveryRadios = document.querySelectorAll('input[name="deliveryType"]');
   const addressField = document.getElementById("addressField");
 
-  function toggleAddress() {
+   function toggleAddress() {
     const selected = document.querySelector('input[name="deliveryType"]:checked')?.value;
     addressField.style.display = (selected === "Delivery") ? "block" : "none";
+
     if (selected !== "Delivery") {
       const addr = document.getElementById("customerAddress");
       if (addr) addr.value = "";
     }
+
+    // recalc totals when switching pickup/delivery
+    renderCart();
   }
 
   deliveryRadios.forEach(r => r.addEventListener("change", toggleAddress));
@@ -185,10 +194,16 @@ function renderCart() {
   const container = document.getElementById("cartItems");
 
   if (cart.length === 0) {
-    container.innerHTML = `<p style="color:var(--gray); text-align:center; padding:20px;">Cart is empty</p>`;
-    document.getElementById("total").innerText = "0";
-    return;
-  }
+  container.innerHTML = `<p style="color:var(--gray); text-align:center; padding:20px;">Cart is empty</p>`;
+
+  const deliveryType =
+    document.querySelector('input[name="deliveryType"]:checked')?.value || "Pickup";
+
+  // ✅ reset totals UI properly (deliveryFee becomes 0 for Pickup)
+  updateTotalsUI(0, deliveryType);
+
+  return;
+}
 
   container.innerHTML = `
     <div style="text-align:right; margin-bottom:10px;">
@@ -211,7 +226,12 @@ function renderCart() {
       </div>`;
   }).join("");
 
-  document.getElementById("total").innerText = total;
+    // current delivery type selection
+  const deliveryType = document.querySelector('input[name="deliveryType"]:checked')?.value || "Pickup";
+
+  // Update UI totals (includes delivery fee if needed)
+  updateTotalsUI(total, deliveryType);
+
 }
 
 function updateCartQty(id, change) {
@@ -288,7 +308,9 @@ async function sendOrder() {
     qty: Number(i.qty ?? 0),
   }));
 
-  const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const itemsTotal = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const deliveryFee = (deliveryType === "Delivery") ? DELIVERY_CHARGE : 0;
+  const grandTotal = itemsTotal + deliveryFee;
 
   try {
     showLoading("Saving order...");
@@ -306,19 +328,56 @@ async function sendOrder() {
       stockRestored: false,
       reservedAt: firebase.firestore.FieldValue.serverTimestamp(),
 
-      total,
+      itemsTotal,
+      deliveryFee,
+      grandTotal,
       items,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
 
     hideLoading();
 
-    await Swal.fire({
-      icon: "success",
-      title: "Order Saved!",
-      html: `Your Order ID: <b>${readableId}</b>`,
-      confirmButtonText: "OK"
-    });
+    clearFields();
+
+
+ await Swal.fire({
+  icon: "success",
+  title: "Order Successfully Placed",
+ html: `
+  <div style="line-height:1.8; text-align:left;">
+
+    <p style="margin-bottom:18px;">
+      <strong>Order Reference: </strong>
+      <span style="color:#2e7d32; font-size:16px;">
+        <b>${readableId}</b>
+      </span>
+    </p>
+
+    <p style="margin-bottom:18px;">
+      Thank you for choosing <strong>Ceylon Mart</strong>.
+    </p>
+
+    <p style="margin-bottom:18px;">
+      <strong>Grand Total:</strong> C$ ${grandTotal}
+    </p>
+
+    <p style="margin-bottom:18px;">
+      You will receive payment instructions via email shortly.<br>
+      Kindly use your <strong>Order ID as the payment reference</strong>.
+    </p>
+
+    <p style="margin-bottom:18px;">
+      Your order will be confirmed once payment is received.
+    </p>
+
+    <p style="font-size:13px; color:#666; margin-top:10px;">
+      Please note: Orders not paid within 24 hours will be automatically cancelled.
+    </p>
+
+  </div>
+`,
+  confirmButtonText: "Continue"
+});
 
     cart = [];
     renderCart();
@@ -379,3 +438,33 @@ renderCart();
 window.addEventListener("beforeunload", () => {
   if (unsubscribeShopProducts) unsubscribeShopProducts();
 });
+
+function updateTotalsUI(itemsTotal, deliveryType) {
+  const isDelivery = deliveryType === "Delivery";
+  const deliveryFee = isDelivery ? DELIVERY_CHARGE : 0;
+  const grandTotal = itemsTotal + deliveryFee;
+
+  // Show base total
+  document.getElementById("total").innerText = itemsTotal;
+
+  // Show/hide delivery fee row
+  const feeRow = document.getElementById("deliveryFeeRow");
+  const feeEl = document.getElementById("deliveryFee");
+  if (feeRow && feeEl) {
+    feeRow.style.display = isDelivery ? "block" : "none";
+    feeEl.innerText = deliveryFee;
+  }
+
+  // Show grand total
+  const grandEl = document.getElementById("grandTotal");
+  if (grandEl) grandEl.innerText = grandTotal;
+
+  return { deliveryFee, grandTotal };
+}
+
+function clearFields() {
+  document.getElementById("customerName").value = "";
+  document.getElementById("customerPhone").value = "";
+  document.getElementById("customerEmail").value = "";
+  document.getElementById("customerAddress").value = "";
+}

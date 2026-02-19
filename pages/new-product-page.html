@@ -76,18 +76,25 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           <div class="total">
             Total: C$ <span id="total">0</span>
           </div>
+          <div id="deliveryFeeRow" class="total" style="display:none; margin-top:8px;">
+            Delivery Fee: C$ <span id="deliveryFee">0</span>
+          </div>
+
+          <div class="total" style="margin-top:8px;">
+            Grand Total: C$ <span id="grandTotal">0</span>
+          </div>
 
           <div class="checkout-section">
             <h4>Checkout Details</h4>
 
-            <input id="customerName" placeholder="Full Name" style="width: 100%; margin-bottom: 10px; padding: 10px;">
-            <input id="customerPhone" placeholder="Phone Number"
-              style="width: 100%; margin-bottom: 10px; padding: 10px;">
+            <input id="customerName" type="text" placeholder="Full Name" style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
+            <input id="customerPhone" type="text" placeholder="Phone Number"
+              style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
             <input id="customerEmail" type="email" placeholder="Email Address"
-              style="width: 100%; margin-bottom: 10px; padding: 10px;">
+              style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
             <div id="addressField" style="display:none;">
-              <input id="customerAddress" placeholder="Address"
-                style="width: 100%; margin-bottom: 10px; padding: 10px;">
+              <input id="customerAddress" type="text" placeholder="Address"
+                style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
             </div>
             <div class="radio-group">
               <label>

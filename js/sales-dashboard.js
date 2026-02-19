@@ -594,6 +594,7 @@ firebase.auth().onAuthStateChanged(async (user) => {
   toastSuccess("Welcome back!");
   startRealtimeProducts();
   startRealtimeOrders();
+  startAutoCancelTimer();  
 });
 
 // --------------------
@@ -642,3 +643,36 @@ window.addEventListener("beforeunload", () => {
   if (unsubscribeOrders) unsubscribeOrders();
   if (unsubscribeProducts) unsubscribeProducts();
 });
+
+function startAutoCancelTimer() {
+  // run every 1 minute
+  setInterval(() => {
+    checkAndAutoCancelExpiredOrders().catch(console.error);
+  }, 60 * 1000);
+}
+
+async function checkAndAutoCancelExpiredOrders() {
+  const now = Date.now();
+  const cutoffMs = 24 * 60 * 60 * 1000; // 24 hours
+
+  for (const o of orders) {
+    if (!o) continue;
+
+    const status = o.status || "Reserved";
+
+    // only Reserved orders
+    if (status !== "Reserved") continue;
+    if (o.autoCancelled === true) continue;
+
+    const reservedAt = o.reservedAt?.toDate
+      ? o.reservedAt.toDate().getTime()
+      : null;
+
+    if (!reservedAt) continue;
+
+    if (now - reservedAt > cutoffMs) {
+      console.log("Auto cancelling order:", o.id);
+      await autoCancelAndRestoreSilently(o.id);
+    }
+  }
+}
