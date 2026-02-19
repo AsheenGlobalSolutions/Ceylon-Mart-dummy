@@ -1,10 +1,10 @@
-// sales-dashboard.js (REALTIME VERSION)
+// sales-dashboard.js (ADMIN REALTIME + AUTO APPLY STOCK)
 
 // --------------------
-// Safety check: Firestore refs must exist from firebase-shop.js
+// Safety check
 // --------------------
-if (!window.db || !window.ordersCol || !window.productsCol) {
-  console.error("db/ordersCol/productsCol not defined. Check firebase-shop.js");
+if (!window.db || !window.ordersCol || !window.productsCol || !firebase?.auth) {
+  console.error("db/ordersCol/productsCol/auth not defined. Check firebase-shop.js");
 }
 
 // --------------------
@@ -22,13 +22,15 @@ let unsubscribeProducts = null;
 // Charts
 let dailyChart, weeklyChart, monthlyChart, topItemsChart;
 
+// Auto-apply guards
+let __autoApplying = false;
+const __autoAppliedThisSession = new Set();
+
 // --------------------
 // Realtime: Orders
 // --------------------
 function startRealtimeOrders() {
   const tbody = document.getElementById("ordersTableBody");
-
-  // stop previous listener (if called twice)
   if (unsubscribeOrders) unsubscribeOrders();
 
   showLoading("Listening to orders...");
@@ -39,6 +41,9 @@ function startRealtimeOrders() {
     .onSnapshot(
       async (snap) => {
         orders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        // ✅ auto-apply stock when admin is online
+        autoApplyStockForNewReservedOrders();
 
         renderOrders();
         updateStatsSummary();
@@ -66,21 +71,54 @@ function startRealtimeOrders() {
 }
 
 // --------------------
-// Realtime: Products (OPTIONAL but useful)
+// Realtime: Products (optional)
 // --------------------
 function startRealtimeProducts() {
-  // stop previous listener
   if (unsubscribeProducts) unsubscribeProducts();
 
   unsubscribeProducts = productsCol.onSnapshot(
     (snap) => {
       products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      // (Optional) if you ever want to show stock widgets in dashboard, you already have products[]
     },
-    (error) => {
-      console.error("Realtime products listener error:", error);
-    }
+    (error) => console.error("Realtime products listener error:", error)
   );
+}
+
+// --------------------
+// Auto apply stock for Reserved orders
+// --------------------
+async function autoApplyStockForNewReservedOrders() {
+  if (__autoApplying) return;
+  __autoApplying = true;
+
+  try {
+    const targets = orders
+      .filter(
+        (o) =>
+          (o.status === "Reserved" || o.status === "Pending") &&
+          o.stockApplied !== true &&
+          o.status !== "Cancelled" &&
+          o.status !== "Paid"
+      )
+      .sort((a, b) => {
+        const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const db = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        return da - db;
+      });
+
+    for (const o of targets) {
+      if (__autoAppliedThisSession.has(o.id)) continue;
+      __autoAppliedThisSession.add(o.id);
+
+      try {
+        await applyStockOnce(o.id, true); // silent
+      } catch (e) {
+        console.error("Auto apply stock failed:", o.id, e);
+      }
+    }
+  } finally {
+    __autoApplying = false;
+  }
 }
 
 // --------------------
@@ -89,7 +127,6 @@ function startRealtimeProducts() {
 function renderOrders() {
   const tbody = document.getElementById("ordersTableBody");
   const paginationContainer = document.getElementById("orderPagination");
-
   if (!tbody || !paginationContainer) return;
 
   tbody.innerHTML = "";
@@ -114,7 +151,8 @@ function renderOrders() {
 
   displayed.forEach((order) => {
     const status = order.status || "Pending";
-    const statusColor = status === "Paid" ? "green" : "orange";
+    const statusColor =
+      status === "Paid" ? "green" : status === "Cancelled" ? "#999" : "orange";
 
     const customerName = order.customer?.name || "Unknown";
     const itemsText =
@@ -125,12 +163,32 @@ function renderOrders() {
 
     const total = Number(order.total ?? 0);
 
-    const actionBtn =
-      status === "Pending"
-        ? `<button class="btn btn-sm" onclick="markPaymentComplete('${order.id}')">Payment Completed</button>`
-        : '<span style="color: green; font-weight: bold;">✓ Completed</span>';
+    let actionBtn = "-";
 
-    const row = `
+    if (status === "Paid") {
+      actionBtn = '<span style="color: green; font-weight: bold;">✓ Paid</span>';
+    } else if (status === "Cancelled") {
+      actionBtn = '<span style="color: #999; font-weight: bold;">✕ Cancelled</span>';
+    } else if (status === "Reserved" || status === "Pending") {
+      if (order.stockApplied === true) {
+        actionBtn = `
+          <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-sm" onclick="markAsPaid('${order.id}')">Mark Paid</button>
+          <button class="btn btn-sm" style="margin-left:6px;background:#999;" onclick="cancelAndRestore('${order.id}')">Cancel</button>
+          </div>
+        `;
+      } else {
+        // auto applies, but keep button as fallback
+        actionBtn = `
+          <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-sm" onclick="applyStockOnce('${order.id}')">Apply Stock</button>
+          <button class="btn btn-sm" style="margin-left:6px;background:#999;" onclick="cancelAndRestore('${order.id}')">Cancel</button>
+          </div>
+        `;
+      }
+    }
+
+    tbody.innerHTML += `
       <tr>
         <td>#${order.readableId || order.id}</td>
         <td>${escapeHtml(customerName)}</td>
@@ -140,10 +198,8 @@ function renderOrders() {
         <td>${actionBtn}</td>
       </tr>
     `;
-    tbody.innerHTML += row;
   });
 
-  // Pagination buttons
   let paginationHTML = "";
   if (totalPages > 1) {
     paginationHTML += `<button class="page-btn" onclick="changeOrderPage(${currentPage - 1})" ${
@@ -171,147 +227,219 @@ function changeOrderPage(page) {
 }
 
 // --------------------
-// Mark Paid + Update stock (transaction)
+// Apply Stock ONCE (transaction)
 // --------------------
-async function markPaymentComplete(orderId) {
+async function applyStockOnce(orderId, silent = false) {
   try {
-    const confirm = await Swal.fire({
-      title: "Confirm Payment?",
-      text: `Mark Order #${orderId} as Paid and update stock?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Confirm",
-      cancelButtonText: "Cancel",
-      reverseButtons: true,
-    });
-
-    if (!confirm.isConfirmed) {
-      toastInfo("Cancelled");
-      return;
-    }
-
-    showLoading("Processing payment...");
+    if (!silent) showLoading("Applying stock...");
 
     const orderRef = ordersCol.doc(orderId);
 
     await db.runTransaction(async (tx) => {
-      // ---------- PHASE 1: READS ONLY ----------
       const orderSnap = await tx.get(orderRef);
       if (!orderSnap.exists) throw new Error("Order not found");
 
       const order = orderSnap.data();
 
-      if ((order.status || "Pending") === "Paid") {
-        throw new Error("This order is already marked as Paid");
+      if (order.stockApplied === true) return;
+
+      const status = order.status || "Reserved";
+      if (status !== "Reserved" && status !== "Pending") {
+        throw new Error(`Cannot apply stock. Status: ${status}`);
       }
 
       const items = Array.isArray(order.items) ? order.items : [];
-      if (items.length === 0) throw new Error("No items in order");
+      if (items.length === 0) throw new Error("No items");
 
-      // Merge quantities by productId
       const needByProductId = new Map();
       for (const it of items) {
-        const productId = it.productId;
+        const pid = it.productId;
         const qty = Number(it.qty ?? 0);
-        if (!productId || !Number.isFinite(qty) || qty <= 0) continue;
-        needByProductId.set(productId, (needByProductId.get(productId) || 0) + qty);
+        if (!pid || !Number.isFinite(qty) || qty <= 0) continue;
+        needByProductId.set(pid, (needByProductId.get(pid) || 0) + qty);
       }
+      if (needByProductId.size === 0) throw new Error("Invalid items");
 
-      if (needByProductId.size === 0) {
-        throw new Error("Order items are invalid (missing productId/qty)");
-      }
+      const productRefs = [...needByProductId.keys()].map((id) =>
+        productsCol.doc(id)
+      );
 
-      const productRefs = [...needByProductId.keys()].map((id) => productsCol.doc(id));
-
-      const productSnaps = [];
-      for (const ref of productRefs) productSnaps.push(await tx.get(ref));
-
-      const updates = []; // { ref, newQty, name }
-      const lowStockAfter = []; // { name, qty }
+      const snaps = [];
+      for (const ref of productRefs) snaps.push(await tx.get(ref));
 
       for (let i = 0; i < productRefs.length; i++) {
         const ref = productRefs[i];
-        const snap = productSnaps[i];
-
+        const snap = snaps[i];
         if (!snap.exists) throw new Error(`Product not found: ${ref.id}`);
 
-        const data = snap.data();
-        const name = data.name || ref.id;
-
-        const currentQty = Number(data.qty ?? 0);
+        const currentQty = Number(snap.data().qty ?? 0);
         const needQty = needByProductId.get(ref.id);
 
         if (currentQty < needQty) {
-          throw new Error(`Not enough stock for ${name} (have ${currentQty}, need ${needQty})`);
+          throw new Error(
+            `Not enough stock for ${snap.data().name || ref.id}`
+          );
         }
 
-        const newQty = currentQty - needQty;
-        updates.push({ ref, newQty, name });
-
-        if (newQty <= 5) {
-          lowStockAfter.push({ name, qty: newQty });
-        }
+        tx.update(ref, { qty: currentQty - needQty });
       }
 
-      // ---------- PHASE 2: WRITES ONLY ----------
-      for (const u of updates) {
-        tx.update(u.ref, { qty: u.newQty });
+      tx.update(orderRef, {
+        stockApplied: true,
+        stockAppliedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    if (!silent) {
+      closeLoading();
+      toastSuccess("Stock applied ✅");
+    }
+  } catch (e) {
+    console.error(e);
+    if (!silent) {
+      closeLoading();
+      Swal.fire({
+        icon: "error",
+        title: "Apply stock failed",
+        text: e.message || "Failed",
+      });
+    }
+    throw e;
+  }
+}
+
+// --------------------
+// Mark as Paid (NO stock changes)
+// --------------------
+async function markAsPaid(orderId) {
+  try {
+    const res = await Swal.fire({
+      title: "Mark as Paid?",
+      text: "This will mark the order as Paid (no stock changes).",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+    });
+    if (!res.isConfirmed) return;
+
+    showLoading("Marking paid...");
+
+    const orderRef = ordersCol.doc(orderId);
+
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) throw new Error("Order not found");
+
+      const order = snap.data();
+      if (order.status === "Paid") return;
+
+      if (order.stockApplied !== true) {
+        throw new Error("Stock not applied yet.");
       }
 
       tx.update(orderRef, {
         status: "Paid",
         paidAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
-
-      // store for after-transaction popup
-      window.__lowStockAfter = lowStockAfter;
     });
 
     closeLoading();
-
-    // Success popup + optional low stock warning
-    const lowStock = window.__lowStockAfter || [];
-    window.__lowStockAfter = [];
-
-    if (lowStock.length > 0) {
-      const html = lowStock
-        .map((x) => `<div style="text-align:left;">• ${escapeHtml(x.name)} — <b>${x.qty}</b> left</div>`)
-        .join("");
-
-      await Swal.fire({
-        icon: "warning",
-        title: "Payment Confirmed ✅",
-        html: `<div style="margin-bottom:8px;">Order #${orderId} marked as Paid.</div>
-               <div><b>Low stock alert:</b></div>${html}`,
-        confirmButtonText: "OK",
-      });
-    } else {
-      await Swal.fire({
-        icon: "success",
-        title: "Payment Confirmed ✅",
-        text: `Order #${orderId} marked as Paid. Stock updated.`,
-        confirmButtonText: "OK",
-      });
-    }
-
-    // ✅ IMPORTANT: no need loadOrders() anymore.
-    // Realtime listener will update table/stats/charts automatically.
-
+    toastSuccess("Marked Paid ✅");
   } catch (e) {
     console.error(e);
     closeLoading();
-
-    await Swal.fire({
-      icon: "error",
-      title: "Payment Failed",
-      text: e.message || "Failed to mark payment complete.",
-      confirmButtonText: "OK",
-    });
+    Swal.fire({ icon: "error", title: "Failed", text: e.message || "Failed" });
   }
 }
 
 // --------------------
-// Stats summary (top cards)
+// Cancel & Restore (restore only if applied)
+// --------------------
+async function cancelAndRestore(orderId) {
+  try {
+    const res = await Swal.fire({
+      title: "Cancel this order?",
+      text: "If stock was applied, it will be restored.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, cancel",
+    });
+    if (!res.isConfirmed) return;
+
+    showLoading("Cancelling...");
+
+    const orderRef = ordersCol.doc(orderId);
+
+    await db.runTransaction(async (tx) => {
+      const orderSnap = await tx.get(orderRef);
+      if (!orderSnap.exists) throw new Error("Order not found");
+
+      const order = orderSnap.data();
+
+      if (order.status === "Paid") throw new Error("Paid order cannot be cancelled.");
+      if (order.status === "Cancelled") return;
+
+      // If stock never applied -> just cancel + mark restored true
+      if (order.stockApplied !== true) {
+        tx.update(orderRef, {
+          status: "Cancelled",
+          stockRestored: true,
+          stockRestoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+
+      // Already restored -> ensure cancelled
+      if (order.stockRestored === true) {
+        tx.update(orderRef, { status: "Cancelled" });
+        return;
+      }
+
+      const items = Array.isArray(order.items) ? order.items : [];
+      const addByProductId = new Map();
+
+      for (const it of items) {
+        const pid = it.productId;
+        const qty = Number(it.qty ?? 0);
+        if (!pid || !Number.isFinite(qty) || qty <= 0) continue;
+        addByProductId.set(pid, (addByProductId.get(pid) || 0) + qty);
+      }
+
+      const productRefs = [...addByProductId.keys()].map((id) =>
+        productsCol.doc(id)
+      );
+
+      const snaps = [];
+      for (const ref of productRefs) snaps.push(await tx.get(ref));
+
+      for (let i = 0; i < productRefs.length; i++) {
+        const ref = productRefs[i];
+        const snap = snaps[i];
+        if (!snap.exists) continue;
+
+        const currentQty = Number(snap.data().qty ?? 0);
+        const addQty = addByProductId.get(ref.id);
+        tx.update(ref, { qty: currentQty + addQty });
+      }
+
+      tx.update(orderRef, {
+        status: "Cancelled",
+        stockRestored: true,
+        stockRestoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    closeLoading();
+    toastSuccess("Cancelled ✅");
+  } catch (e) {
+    console.error(e);
+    closeLoading();
+    Swal.fire({ icon: "error", title: "Cancel failed", text: e.message || "Failed" });
+  }
+}
+
+// --------------------
+// Stats summary
 // --------------------
 function updateStatsSummary() {
   const paidOrders = orders.filter((o) => (o.status || "Pending") === "Paid");
@@ -333,10 +461,9 @@ function updateStatsSummary() {
 }
 
 // --------------------
-// Charts from Firestore data
+// Charts
 // --------------------
 async function generateChartsFromFirestore() {
-  // Use only PAID orders for revenue charts
   const paid = orders.filter((o) => (o.status || "Pending") === "Paid");
 
   const dailyCanvas = document.getElementById("dailySalesChart");
@@ -345,10 +472,8 @@ async function generateChartsFromFirestore() {
   const topCanvas = document.getElementById("topItemsChart");
   if (!dailyCanvas || !weeklyCanvas || !monthlyCanvas || !topCanvas) return;
 
-  // Convert Firestore timestamp -> JS Date safely
   const toDate = (ts) => (ts?.toDate ? ts.toDate() : null);
 
-  // ---- Daily (last 7 days) ----
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const dailyRevenue = [0, 0, 0, 0, 0, 0, 0];
 
@@ -358,44 +483,33 @@ async function generateChartsFromFirestore() {
 
   paid.forEach((o) => {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
-    if (!d) return;
-    if (d < sevenDaysAgo) return;
-
-    // JS getDay(): Sun=0..Sat=6 -> convert to Mon=0..Sun=6
+    if (!d || d < sevenDaysAgo) return;
     const idx = (d.getDay() + 6) % 7;
     dailyRevenue[idx] += Number(o.total ?? 0);
   });
 
-  // ---- Weekly (last 4 weeks) ----
   const weeklyLabels = ["Week 1", "Week 2", "Week 3", "Week 4"];
   const weeklyRevenue = [0, 0, 0, 0];
-
   const fourWeeksAgo = new Date(now);
   fourWeeksAgo.setDate(now.getDate() - 27);
 
   paid.forEach((o) => {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
-    if (!d) return;
-    if (d < fourWeeksAgo) return;
-
+    if (!d || d < fourWeeksAgo) return;
     const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
-    const bucket = Math.min(3, Math.floor(diffDays / 7)); // 0..3
-    const idx = 3 - bucket; // oldest->newest
+    const bucket = Math.min(3, Math.floor(diffDays / 7));
+    const idx = 3 - bucket;
     weeklyRevenue[idx] += Number(o.total ?? 0);
   });
 
-  // ---- Monthly (last 6 months) ----
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthlyRevenueMap = new Map(); // "YYYY-MM" -> sum
-
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const monthlyRevenueMap = new Map();
   const sixMonthsAgo = new Date(now);
   sixMonthsAgo.setMonth(now.getMonth() - 5);
 
   paid.forEach((o) => {
     const d = toDate(o.paidAt) || toDate(o.createdAt);
-    if (!d) return;
-    if (d < sixMonthsAgo) return;
-
+    if (!d || d < sixMonthsAgo) return;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     monthlyRevenueMap.set(key, (monthlyRevenueMap.get(key) || 0) + Number(o.total ?? 0));
   });
@@ -410,8 +524,7 @@ async function generateChartsFromFirestore() {
     monthlyRevenue.push(monthlyRevenueMap.get(key) || 0);
   }
 
-  // ---- Top items (by qty) ----
-  const itemQty = new Map(); // name -> qty
+  const itemQty = new Map();
   paid.forEach((o) => {
     (o.items || []).forEach((it) => {
       const name = it.name || "Unknown";
@@ -424,13 +537,11 @@ async function generateChartsFromFirestore() {
   const topLabels = top.map((x) => x[0]);
   const topData = top.map((x) => x[1]);
 
-  // Destroy old charts
   if (dailyChart) dailyChart.destroy();
   if (weeklyChart) weeklyChart.destroy();
   if (monthlyChart) monthlyChart.destroy();
   if (topItemsChart) topItemsChart.destroy();
 
-  // Render charts
   dailyChart = new Chart(dailyCanvas, {
     type: "bar",
     data: { labels: days, datasets: [{ label: "Revenue (CAD)", data: dailyRevenue }] },
@@ -481,14 +592,12 @@ firebase.auth().onAuthStateChanged(async (user) => {
   }
 
   toastSuccess("Welcome back!");
-
-  // ✅ start realtime listeners
-  startRealtimeProducts(); // optional but useful
+  startRealtimeProducts();
   startRealtimeOrders();
 });
 
 // --------------------
-// SweetAlert Helpers
+// SweetAlert helpers
 // --------------------
 const Toast = Swal.mixin({
   toast: true,
@@ -502,15 +611,9 @@ const Toast = Swal.mixin({
   },
 });
 
-function toastSuccess(msg) {
-  Toast.fire({ icon: "success", title: msg });
-}
-function toastError(msg) {
-  Toast.fire({ icon: "error", title: msg });
-}
-function toastInfo(msg) {
-  Toast.fire({ icon: "info", title: msg });
-}
+function toastSuccess(msg) { Toast.fire({ icon: "success", title: msg }); }
+function toastError(msg) { Toast.fire({ icon: "error", title: msg }); }
+function toastInfo(msg) { Toast.fire({ icon: "info", title: msg }); }
 
 function showLoading(title = "Loading...") {
   Swal.fire({
@@ -520,17 +623,12 @@ function showLoading(title = "Loading...") {
     didOpen: () => Swal.showLoading(),
   });
 }
-function closeLoading() {
-  Swal.close();
-}
+function closeLoading() { Swal.close(); }
 
-// --------------------
-// Burger Menu Logic (Sales Dashboard)
-// --------------------
+// Burger menu
 document.addEventListener("DOMContentLoaded", () => {
   const burger = document.querySelector(".burger");
   const nav = document.querySelector(".nav-links");
-
   if (burger && nav) {
     burger.addEventListener("click", () => {
       nav.classList.toggle("nav-active");
@@ -539,9 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// --------------------
-// Cleanup listeners when leaving page
-// --------------------
+// Cleanup
 window.addEventListener("beforeunload", () => {
   if (unsubscribeOrders) unsubscribeOrders();
   if (unsubscribeProducts) unsubscribeProducts();
