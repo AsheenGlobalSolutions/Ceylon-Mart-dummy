@@ -1049,3 +1049,43 @@ html, body {
   background-color: #f8fafc;
   border-color: var(--text-light);
 }
+
+/* ---------- Navbar Logo ---------- */
+.logo {
+  height: 45px;      /* Adjust this value */
+  width: auto;       /* Keeps aspect ratio */
+  object-fit: contain;
+}
+
+/* Default (Desktop) */
+.logo {
+  height: 50px;
+  width: auto;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .logo {
+    height: 42px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .logo {
+    height: 38px;
+  }
+}
+
+/* ---------- Logo Container ---------- */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;  /* Space between logo image and text */
+}
+
+/* Make sure the link text doesn't mess up alignment */
+.logo-container .brand {
+  margin: 0;
+  font-size: 1.5rem;
+}

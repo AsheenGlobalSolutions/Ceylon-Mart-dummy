@@ -28,7 +28,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
   <!-- Navigation -->
   <header class="navbar">
     <div class="container">
-      <a href="#" class="brand">Ceylon Mart</a>
+      <div class="logo-container">
+        <img src="../assets/images/logo.png" alt="Ceylon Mart" class="logo">
+        <a href="../index.html" class="brand">Ceylon Mart</a>
+      </div>
       <div class="burger">
         <div class="line1"></div>
         <div class="line2"></div>
@@ -81,7 +84,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
               style="width: 100%; margin-bottom: 10px; padding: 10px;">
             <input id="customerEmail" type="email" placeholder="Email Address"
               style="width: 100%; margin-bottom: 10px; padding: 10px;">
-
+            <div id="addressField" style="display:none;">
+              <input id="customerAddress" placeholder="Address"
+                style="width: 100%; margin-bottom: 10px; padding: 10px;">
+            </div>
             <div class="radio-group">
               <label>
                 <input type="radio" name="deliveryType" value="Pickup" checked> Pickup

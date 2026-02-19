@@ -246,15 +246,18 @@ async function saveProduct() {
 
     if (docId) {
       await productsCol.doc(docId).update(data);
-    } else {
+} else {
   data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
 
-  const newId = await createReadableProductId();
+  // ✅ generate firestore doc first (no write yet)
+  const ref = productsCol.doc();         // creates doc reference with random id
+  const newId = "P-" + ref.id.slice(-8).toUpperCase(); // readable product id
 
-  // save with readable ID as the document id
-  await productsCol.doc(newId).set({
+  // ✅ save product (single write)
+  await ref.set({
     ...data,
-    productId: newId // optional (helps later)
+    productId: newId,     // store readable id inside doc
+    readableId: newId     // optional, if you want consistent naming
   });
 }
 
@@ -383,33 +386,9 @@ async function uploadImageToCloudinary(file) {
   return data.secure_url;
 }
 
-async function createReadableProductId() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const dateKey = `${yyyy}${mm}${dd}`; // 20260217
-
-  const counterRef = db.collection("counters").doc(`products_${dateKey}`);
-
-  const readableId = await db.runTransaction(async (tx) => {
-    const counterSnap = await tx.get(counterRef);
-
-    let next = 1;
-    if (!counterSnap.exists) {
-      tx.set(counterRef, { current: 1, dateKey });
-    } else {
-      const current = Number(counterSnap.data().current ?? 0);
-      next = current + 1;
-      tx.update(counterRef, { current: next });
-    }
-
-    const no = String(next).padStart(3, "0");
-    return `P-${dateKey}-${no}`; 
-  });
-
-  return readableId;
-}
+function makeReadableProductIdFromDocId(docId) {
+  return "P-" + docId.slice(-8).toUpperCase(); // P-7G2FPQ4Z
+} 
 
 document.addEventListener("DOMContentLoaded", () => {
   const burger = document.querySelector(".burger");

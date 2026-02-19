@@ -88,7 +88,7 @@ function renderOrders() {
 
     const row = `
       <tr>
-        <td>#${order.id}</td>
+       <td>#${order.readableId || order.id}</td>
         <td>${escapeHtml(customerName)}</td>
         <td>${escapeHtml(itemsText)}</td>
         <td>C$ ${total}</td>

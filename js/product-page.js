@@ -42,6 +42,26 @@
       }
     }
 
+
+    document.addEventListener("DOMContentLoaded", () => {
+  const deliveryRadios = document.querySelectorAll('input[name="deliveryType"]');
+  const addressField = document.getElementById("addressField");
+
+  function toggleAddress() {
+    const selected = document.querySelector('input[name="deliveryType"]:checked')?.value;
+    addressField.style.display = (selected === "Delivery") ? "block" : "none";
+
+    // optional: clear address when pickup is selected
+    if (selected !== "Delivery") {
+      const addr = document.getElementById("customerAddress");
+      if (addr) addr.value = "";
+    }
+  }
+
+  deliveryRadios.forEach(r => r.addEventListener("change", toggleAddress));
+  toggleAddress(); // run once on load (because Pickup is checked)
+});
+
     // (Optional) Realtime updates
     // function listenProductsRealtime() {
     //   const container = document.getElementById("products");
@@ -231,15 +251,19 @@ async function clearCart() {
 
 async function sendOrder() {
   if (cart.length === 0) {
-    alert("Cart is empty!");
+    toastWarn("Cart is empty!");
     return;
   }
 
   const name = document.getElementById("customerName").value.trim();
   const phone = document.getElementById("customerPhone").value.trim();
   const email = document.getElementById("customerEmail").value.trim();
-  const note = document.getElementById("customerNote").value.trim();
-  const deliveryType = document.querySelector('input[name="deliveryType"]:checked').value;
+  let address = "N/A";
+  const deliveryType = document.querySelector('input[name="deliveryType"]:checked')?.value;
+
+  if (deliveryType === "Delivery") {
+    address = document.getElementById("customerAddress").value.trim();
+  }
 
   if (!name || !phone || !email) {
     toastWarn("Please enter Name, Phone, Email.");
@@ -253,70 +277,32 @@ async function sendOrder() {
     qty: Number(i.qty ?? 0),
   }));
 
-  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const total = items.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
   try {
-
     showLoading("Saving order...");
 
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const dateKey = `${yyyy}${mm}${dd}`; // 20260217
+    // 🔹 Create empty doc ref first (generates unique ID without writing)
+    const orderRef = ordersCol.doc();
 
-    // Counter doc per day (so it resets daily)
-    const counterRef = db.collection("counters").doc(`orders_${dateKey}`);
+    // 🔹 Generate readable ID from doc ID
+    const readableId = "R-" + orderRef.id.slice(-6).toUpperCase();
 
-    const readableId = await db.runTransaction(async (tx) => {
-      const counterSnap = await tx.get(counterRef);
-
-      let next = 1;
-      if (!counterSnap.exists) {
-        tx.set(counterRef, { current: 1, dateKey });
-      } else {
-        const current = Number(counterSnap.data().current ?? 0);
-        next = current + 1;
-        tx.update(counterRef, { current: next });
-      }
-
-      const orderNo = String(next).padStart(3, "0"); // 001, 002...
-      const newReadableId = `R-${dateKey}-${orderNo}`; // R-20260217-001
-
-      // Save order using readable id as document id
-      const orderRef = ordersCol.doc(newReadableId);
-
-      tx.set(orderRef, {
-        readableId: newReadableId,
-        customer: { name, phone, email },
-        deliveryType,
-        note,
-        status: "Pending",
-        total,
-        items,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        paidAt: null
-      });
-      return newReadableId;
-    });
-
-        // OPTIONAL: send EmailJS (if you want)
-//     /*
-//     const orderDetails = items.map(i => `${i.name} x ${i.qty}`).join("\n");
-//     const templateParams = {
-//       customer_name: name,
-//       customer_phone: phone,
-//       customer_email: email,
-//       delivery_type: deliveryType,
-//       customer_note: note,
-//       order_details: orderDetails,
-//       order_total: total,
-//       order_id: orderDoc.id
-//     };
-
-//     await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
-//     */
-
+    // 🔹 Save order using set() (single write, no update needed)
+    await orderRef.set({
+  readableId,
+  customer: {
+    name,
+    phone,
+    email,
+    address
+  },
+  deliveryType,
+  status: "Pending",
+  total,
+  items,
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
 
     hideLoading();
 
@@ -330,11 +316,10 @@ async function sendOrder() {
     cart = [];
     renderCart();
 
-
-
   } catch (e) {
+    hideLoading();
     console.error(e);
-    toastError("Failed to save order. Check console.");
+    toastError("Failed to save order.");
   }
 }
 
