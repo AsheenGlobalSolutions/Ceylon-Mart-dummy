@@ -1,43 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ceylon Mart | Shop</title>
-  <link rel="icon" type="image/png" href="../assets/images/logo.png">
-  <link rel="stylesheet" href="../css/style.css">
+
+  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+  <!-- YOUR CSS -->
+  <link rel="stylesheet" href="../css/style.css" />
 
   <!-- Firebase compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
-  <!-- EmailJS -->
+  <!-- EmailJS (optional) -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
+  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <!-- Your Firebase init (must define firebaseConfig + productsCol) -->
+  <!-- Must define window.db, window.productsCol, window.ordersCol -->
   <script src="../js/firebase-shop.js"></script>
-
-  <link rel="stylesheet" 
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
-
-  <!-- Navigation -->
+  <!-- NAV -->
   <header class="navbar">
-    <div class="container">
+    <div class="container nav-inner">
       <div class="logo-container">
-        <img src="../assets/images/logo.png" alt="Ceylon Mart" class="logo">
+        <img src="../assets/images/logo.png" alt="Ceylon Mart" class="logo" />
         <a href="../index.html" class="brand">Ceylon Mart</a>
       </div>
+
       <div class="burger">
         <div class="line1"></div>
         <div class="line2"></div>
         <div class="line3"></div>
       </div>
+
       <div class="nav-links">
         <a href="../index.html">Home</a>
         <a href="#" class="active">Shop</a>
@@ -46,36 +51,39 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="container">
-
-    <header style="text-align: center; margin: 3rem 0;">
-      <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">Fresh Products</h1>
-      <p style="color: var(--gray);">Best quality items delivered to your doorstep.</p>
+  <!-- MAIN -->
+  <main class="container" id="shop">
+    <header class="page-head">
+      <h1>Fresh Products</h1>
+      <p>Best quality items delivered to your doorstep.</p>
     </header>
 
     <div class="shop-layout">
-
+      <!-- LEFT: Products -->
       <div class="shop-main">
-        <section id="products" class="product-list">
-          <!-- Products Loaded Here -->
-        </section>
+        <div class="shop-toolbar">
+          <button class="btn btn-outline filter-open" type="button" onclick="openFilterDrawer()">
+            <i class="fa-solid fa-filter"></i> Filter
+          </button>
 
-        <!-- Pagination Controls -->
+          <div class="filter-summary" id="filterSummary"></div>
+        </div>
+
+        <section id="products" class="product-list"></section>
         <div id="pagination" class="pagination"></div>
       </div>
 
+      <!-- RIGHT: Cart -->
       <aside class="shop-sidebar">
         <section class="cart-section">
-          <h3>🛒 Your Cart</h3>
+          <h3 class="cart-title">🛒 Your Cart</h3>
 
           <div id="cartItems" class="cart-items">
-            <p style="color:var(--gray); text-align:center; padding:20px;">Cart is empty</p>
+            <p class="empty">Cart is empty</p>
           </div>
 
-          <div class="total">
-            Total: C$ <span id="total">0</span>
-          </div>
+          <div class="total">Total: C$ <span id="total">0</span></div>
+
           <div id="deliveryFeeRow" class="total" style="display:none; margin-top:8px;">
             Delivery Fee: C$ <span id="deliveryFee">0</span>
           </div>
@@ -87,78 +95,101 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           <div class="checkout-section">
             <h4>Checkout Details</h4>
 
-            <input id="customerName" type="text" placeholder="Full Name" style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
-            <input id="customerPhone" type="text" placeholder="Phone Number"
-              style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
-            <input id="customerEmail" type="email" placeholder="Email Address"
-              style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
+            <input id="customerName" type="text" placeholder="Full Name" required />
+            <input id="customerPhone" type="text" placeholder="Phone Number" required />
+            <input id="customerEmail" type="email" placeholder="Email Address" required />
+
             <div id="addressField" style="display:none;">
-              <input id="customerAddress" type="text" placeholder="Address"
-                style="width: 100%; margin-bottom: 10px; padding: 10px;" required>
+              <input id="customerAddress" type="text" placeholder="Address" />
             </div>
+
             <div class="radio-group">
-              <label>
-                <input type="radio" name="deliveryType" value="Pickup" checked> Pickup
-              </label>
-              <label>
-                <input type="radio" name="deliveryType" value="Delivery"> Delivery
-              </label>
+              <label><input type="radio" name="deliveryType" value="Pickup" checked> Pickup</label>
+              <label><input type="radio" name="deliveryType" value="Delivery"> Delivery</label>
             </div>
 
-            <textarea id="customerNote" placeholder="Add a note (optional)" rows="3"
-              style="width: 100%; margin-bottom: 10px; padding: 10px;"></textarea>
+            <textarea id="customerNote" placeholder="Add a note (optional)" rows="3"></textarea>
 
-            <button class="btn" style="width: 100%;" onclick="sendOrder()">Place Order via Email</button>
+            <button class="btn w-100" onclick="sendOrder()">Place Order</button>
           </div>
         </section>
       </aside>
     </div>
   </main>
 
-  <!-- Footer -->
+  <!-- FILTER DRAWER -->
+  <div id="filterDrawerOverlay" class="drawer-overlay" aria-hidden="true">
+    <aside id="filterDrawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="filterTitle">
+      <div class="drawer-head">
+        <h3 id="filterTitle">Filters</h3>
+        <button class="drawer-close" type="button" onclick="closeFilterDrawer()" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="drawer-field">
+          <label>Category</label>
+          <select id="filterCategory">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+
+        <div class="drawer-field">
+          <label>Brand</label>
+          <select id="filterBrand">
+            <option value="">All Brands</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-outline" type="button" onclick="clearFilters(); closeFilterDrawer();">Clear</button>
+        <button class="btn" type="button" onclick="applyFilters(); closeFilterDrawer();">Apply</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- HOW TO ORDER POPUP -->
+  <div id="howToOrderPopup" class="popup-overlay" aria-hidden="true">
+    <div class="popup-card" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+      <div class="popup-head">
+        <div>
+          <h2 id="howtoTitle">How to Order</h2>
+          <p class="popup-sub">Follow these steps to place your order.</p>
+        </div>
+
+        <button class="popup-x" id="howtoCloseBtn" aria-label="Close popup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <ol class="howto-list">
+        <li>Select products and click <span class="pill">Add</span>.</li>
+        <li>Open your <span class="pill soft">Cart</span> to review items.</li>
+        <li>Enter your <b>Name</b>, <b>Phone</b>, and <b>Address</b>.</li>
+        <li>Click <span class="pill">Place Order</span> to confirm.</li>
+      </ol>
+
+      <div class="popup-actions">
+        <button class="btn btn-outline" id="dontShowHowToBtn" type="button">Don’t show again</button>
+        <a class="btn-primary" href="#shop" id="startShoppingBtn">Start Shopping</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
   <footer class="footer">
     <div class="container">
-      <p>Copyright &copy; 2026. Developed with <span style="color: var(--primary);">&hearts;</span> by
-        <strong>Asheen Global Solutions</strong>.
+      <p>
+        Copyright &copy; 2026. Developed with
+        <span style="color: var(--primary)">&hearts;</span>
+        by <strong>Asheen Global Solutions</strong>.
       </p>
     </div>
   </footer>
- <div id="howToOrderPopup" class="popup-overlay" aria-hidden="true">
-  <div class="popup-card" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
-    <div class="popup-head">
-      <div>
-        <h2 id="howtoTitle">How to Order</h2>
-        <p class="popup-sub">Follow these steps to place your order.</p>
-      </div>
 
-      <button class="popup-x" id="howtoCloseBtn" aria-label="Close popup">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-
-    <ol class="howto-list">
-      <li>
-        Select products and click <span class="pill">Add</span>.
-      </li>
-      <li> 
-        Open your <span class="pill soft">Cart</span> to review items.
-      </li>
-      <li>
-        Enter your <b>Name</b>, <b>Phone</b>, and <b>Address</b>.
-      </li>
-      <li>
-        Click <span class="pill">Place Order via Email</span> to confirm.
-      </li>
-    </ol>
-
-    <div class="popup-actions">
-      <button class="btn-outline" id="dontShowHowToBtn" type="button">Don’t show again</button>
-      <a class="btn-primary" href="#shop" id="startShoppingBtn">Start Shopping</a>
-    </div>
-  </div>
-</div>
+  <!-- YOUR JS -->
+  <script src="../js/product-page.js"></script>
 </body>
-<script src="../js/product-page.js"></script>
-<script src="../js/whatsapp-widget.js"></script>
-
 </html>

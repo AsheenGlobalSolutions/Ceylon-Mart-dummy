@@ -2,7 +2,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    /* 🔥 ORANGE THEME */
     --primary: #f97316;           /* Orange-500 */
     --primary-hover: #ea580c;     /* Orange-600 */
     --secondary: #fb923c;         /* Light orange */
@@ -1256,5 +1255,222 @@ html, body {
   }
   .howto-list li{
     padding-left: 48px;
+  }
+}
+
+
+.group-head {
+  margin: 14px 0 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 145, 0, 0.12);
+  border: 1px solid rgba(255, 145, 0, 0.25);
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-head small {
+  font-weight: 600;
+  color: var(--gray);
+}
+
+/* Product grid */
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .product-list { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+}
+@media (max-width: 650px) {
+  .product-list { grid-template-columns: 1fr; }
+}
+
+/* ✅ Group heading spans full row */
+.group-head {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 145, 0, 0.10);
+  border: 1px solid rgba(255, 145, 0, 0.25);
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-head small {
+  font-weight: 600;
+  color: var(--gray);
+}
+
+/* Product card should be grid item */
+.product-row {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Small toolbar button */
+.shop-toolbar{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.filter-open{
+  padding: 10px 14px;
+  border-radius: 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* Optional summary */
+.filter-summary{
+  font-size: 0.9rem;
+  color: var(--gray);
+  padding: 8px 10px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Overlay */
+.drawer-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: none;
+  z-index: 9999;
+}
+
+.drawer-overlay.show{ display:block; }
+
+/* Drawer base */
+.drawer{
+  background: #fff;
+  border: 1px solid #eee;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  display:flex;
+  flex-direction: column;
+  padding: 14px;
+}
+
+/* Header */
+.drawer-head{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.drawer-head h3{
+  margin:0;
+  font-size:1.1rem;
+}
+
+.drawer-close{
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.drawer-close:hover{ background: rgba(0,0,0,0.05); }
+
+/* Body */
+.drawer-body{
+  padding: 14px 2px;
+  overflow:auto;
+  flex:1;
+}
+
+.drawer-field{ margin-bottom: 14px; }
+
+.drawer-field label{
+  display:block;
+  font-size:0.85rem;
+  color: var(--gray);
+  margin-bottom:6px;
+}
+
+.drawer-field select{
+  width:100%;
+  padding:10px;
+  border:1px solid #e6e6e6;
+  border-radius: 12px;
+  outline:none;
+  background:#fff;
+}
+
+.drawer-field select:focus{ border-color: var(--primary); }
+
+/* Actions */
+.drawer-actions{
+  display:flex;
+  gap:10px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.drawer-actions .btn,
+.drawer-actions .btn-outline{ width:100%; }
+
+
+/* =========================================================
+   Desktop (>= 768px): LEFT Drawer
+   ========================================================= */
+@media (min-width: 768px){
+  .drawer{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: min(420px, 92vw);
+    border-radius: 0;
+    border-left: 0;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+  }
+
+  .drawer-overlay.show .drawer{
+    transform: translateX(0);
+  }
+}
+
+/* =========================================================
+   Mobile (< 768px): Bottom Sheet
+   ========================================================= */
+@media (max-width: 767px){
+  .drawer{
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
+    max-height: 85vh;
+    border-radius: 18px 18px 0 0;
+    transform: translateY(105%);
+    transition: transform 0.25s ease;
+  }
+
+  .drawer-overlay.show .drawer{
+    transform: translateY(0);
   }
 }

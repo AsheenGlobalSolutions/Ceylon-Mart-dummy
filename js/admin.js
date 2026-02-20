@@ -120,7 +120,7 @@ async function loadProducts() {
   const tbody = document.getElementById("productTableBody");
   const paginationContainer = document.getElementById("pagination");
 
-  tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading...</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Loading...</td></tr>";
   paginationContainer.innerHTML = "";
 
   try {
@@ -135,7 +135,7 @@ async function loadProducts() {
     renderProductsPage();
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;color:red;'>Failed to load products</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;color:red;'>Failed to load products</td></tr>";
   }
 }
 function renderProductsPage() {
@@ -145,7 +145,7 @@ function renderProductsPage() {
   tbody.innerHTML = "";
 
   if (allProductsCache.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No products found.</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;'>No products found.</td></tr>";
     paginationContainer.innerHTML = "";
     return;
   }
@@ -161,25 +161,34 @@ function renderProductsPage() {
   const displayed = allProductsCache.slice(start, end);
 
   displayed.forEach(p => {
-    const qty = Number(p.qty ?? 0);
-    const price = Number(p.price ?? 0);
+  const qty = Number(p.qty ?? 0);
+  const price = Number(p.price ?? 0);
 
-    const row = `<tr>
-      <td>${p.id}</td>
-      <td>${escapeHtml(p.name || "")}</td>
-      <td>C$ ${price}</td>
-      <td>
-        <span class="badget ${qty > 10 ? 'stock-ok' : (qty > 0 ? 'stock-low' : 'stock-out')}">
-          ${qty}
-        </span>
-      </td>
-      <td>
-        <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;" onclick="editProduct('${p.id}')">Edit</button>
-        <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-left: 0.5rem;" onclick="deleteProduct('${p.id}')">Delete</button>
-      </td>
-    </tr>`;
-    tbody.innerHTML += row;
-  });
+  // ✅ show readable ID in table (fallback to old if missing)
+  const readableId = p.productId || p.readableId || makeReadableProductIdFromDocId(p.id);
+
+  const row = `<tr>
+    <td>${readableId}</td>
+    <td>${escapeHtml(p.name || "")}</td>
+    <td>${escapeHtml(p.brand || "No Brand")}</td>
+    <td>${escapeHtml(p.category || "Other")}</td>
+    <td>${escapeHtml(p.weight || "0")}</td>
+    <td>C$ ${price}</td>
+    <td>
+      <span class="badget ${qty > 10 ? 'stock-ok' : (qty > 0 ? 'stock-low' : 'stock-out')}">
+        ${qty}
+      </span>
+    </td>
+    <td>
+      <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;"
+        onclick="editProduct('${p.id}')">Edit</button>
+      <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-left: 0.5rem;"
+        onclick="deleteProduct('${p.id}')">Delete</button>
+    </td>
+  </tr>`;
+
+  tbody.innerHTML += row;
+});
 
   // Pagination UI
   let html = "";
@@ -216,7 +225,17 @@ function setUpdateMode() {
 async function saveProduct() {
   const docId = document.getElementById("productId").value.trim();
   const name = document.getElementById("productName").value.trim();
+  let brand = document.getElementById("productBrand").value.trim();
+if (!brand) brand = "No Brand";
+
+let category = document.getElementById("productCategory").value.trim();
+if (!category) category = "Other";
+
+let weight = document.getElementById("weight").value.trim();
+if (!weight) weight = "0";
+
   const price = Number(document.getElementById("productPrice").value);
+
   const qty = Number(document.getElementById("productQty").value);
   const fileInput = document.getElementById("productImageFile");
   let imageUrl = null;
@@ -232,6 +251,9 @@ async function saveProduct() {
 
   const data = {
     name,
+    brand,
+    category,
+    weight,
     price,
     qty,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -282,6 +304,9 @@ function editProduct(docId) {
   document.getElementById("productName").value = p.name || "";
   document.getElementById("productPrice").value = p.price ?? "";
   document.getElementById("productQty").value = p.qty ?? 0;
+  document.getElementById("productBrand").value = p.brand || "";
+  document.getElementById("productCategory").value = p.category || "";
+  document.getElementById("weight").value = p.weight || "";
 
   const preview = document.getElementById("imagePreview");
   if (p.image) {
@@ -291,7 +316,14 @@ function editProduct(docId) {
     preview.src = "";
     preview.style.display = "none";
   }
+
   setUpdateMode();
+
+  // ✅ scroll to form
+  document.getElementById("productFormSection")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 async function deleteProduct(docId) {
@@ -323,6 +355,9 @@ function clearForm() {
   document.getElementById("productName").value = "";
   document.getElementById("productPrice").value = "";
   document.getElementById("productQty").value = "";
+  document.getElementById("productBrand").value = "";
+  document.getElementById("productCategory").value = "";
+  document.getElementById("weight").value = "";
 
   // Clear file input
   const fileInput = document.getElementById("productImageFile");
