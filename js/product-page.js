@@ -468,3 +468,59 @@ function clearFields() {
   document.getElementById("customerEmail").value = "";
   document.getElementById("customerAddress").value = "";
 }
+
+
+
+// pop-up window (How to Order)
+document.addEventListener("DOMContentLoaded", function () {
+  const popup = document.getElementById("howToOrderPopup");
+  const closeBtn = document.getElementById("howtoCloseBtn");
+  const startBtn = document.getElementById("startShoppingBtn");
+  const dontShowBtn = document.getElementById("dontShowHowToBtn");
+
+  if (!popup) return;
+
+  const KEY = "how_to_seen";
+
+  function openPopup() {
+    popup.classList.add("show");
+    popup.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closePopup(setSeen = true) {
+    popup.classList.remove("show");
+    popup.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+
+    // Save seen only when we want
+    if (setSeen) localStorage.setItem(KEY, "1");
+  }
+
+  // ✅ Show only first time
+  if (!localStorage.getItem(KEY)) {
+    openPopup();
+  }
+
+  // ✅ Close (X)
+  closeBtn?.addEventListener("click", () => closePopup(true));
+
+  // ✅ Start Shopping (close popup, and allow link to work)
+  startBtn?.addEventListener("click", () => closePopup(true));
+
+  // ✅ Don’t show again
+  dontShowBtn?.addEventListener("click", () => closePopup(true));
+
+  // ✅ Click outside the popup-card closes it
+  popup.addEventListener("click", (e) => {
+    // only close if clicking on the overlay, not inside the card
+    if (e.target === popup) closePopup(true);
+  });
+
+  // ✅ ESC key closes
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && popup.classList.contains("show")) {
+      closePopup(true);
+    }
+  });
+});

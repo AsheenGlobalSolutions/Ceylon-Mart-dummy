@@ -1089,3 +1089,172 @@ html, body {
   margin: 0;
   font-size: 1.5rem;
 }
+
+/* =========================
+   Modern Responsive Popup
+   ========================= */
+
+.popup-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 20, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 26px);
+  z-index: 99999;
+}
+
+.popup-overlay.show{ display: flex; }
+
+/* Card */
+.popup-card{
+  width: min(760px, 100%);
+  max-height: calc(100vh - 2 * clamp(12px, 3vw, 26px));
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  background: #fff;
+  border-radius: 20px;
+  padding: clamp(16px, 2.6vw, 26px);
+
+  box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+  border: 1px solid rgba(255, 122, 0, 0.18);
+}
+
+/* Header */
+.popup-head{
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.popup-head h2{
+  margin: 0;
+  font-size: clamp(1.15rem, 2.2vw, 1.7rem);
+  color: #1f2937;
+}
+
+.popup-sub{
+  margin: 6px 0 0;
+  color: #6b7280;
+  line-height: 1.5;
+  font-size: clamp(0.9rem, 1.6vw, 1rem);
+}
+
+/* Close button */
+.popup-x{
+  border: 0;
+  background: #f3f4f6;
+  color: #111827;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.popup-x:hover{ background: #e5e7eb; transform: translateY(-1px); }
+
+/* Steps List */
+.howto-list{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+/* Each step as a card */
+.howto-list li{
+  position: relative;
+  padding: 14px 14px 14px 52px;
+  border-radius: 16px;
+  background: #fff7ef;
+  border: 1px solid #ffe3c8;
+  color: #374151;
+  line-height: 1.55;
+}
+
+/* Number badge */
+.howto-list li::before{
+  content: counter(step);
+}
+.howto-list{ counter-reset: step; }
+.howto-list li::before{
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: #ff7a00;
+  color: #fff;
+}
+
+/* Highlight pill */
+.pill{
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  background: #ff7a00;
+  color: #fff;
+  white-space: nowrap; /* IMPORTANT: prevents vertical word stacking */
+}
+.pill.soft{
+  background: #fff;
+  color: #ff7a00;
+  border: 2px solid #ff7a00;
+}
+
+/* Actions */
+.popup-actions{
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-primary, .btn-outline{
+  min-height: 46px;
+  border-radius: 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-primary{
+  background: #ff7a00;
+  color: #fff;
+  border: 0;
+}
+
+.btn-outline{
+  background: transparent;
+  color: #ff7a00;
+  border: 2px solid #ff7a00;
+}
+
+/* Mobile tweaks */
+@media (max-width: 520px){
+  .popup-actions{
+    grid-template-columns: 1fr;
+  }
+  .howto-list li{
+    padding-left: 48px;
+  }
+}

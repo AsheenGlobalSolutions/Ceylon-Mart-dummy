@@ -112,7 +112,6 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           </div>
         </section>
       </aside>
-
     </div>
   </main>
 
@@ -124,6 +123,40 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
       </p>
     </div>
   </footer>
+ <div id="howToOrderPopup" class="popup-overlay" aria-hidden="true">
+  <div class="popup-card" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+    <div class="popup-head">
+      <div>
+        <h2 id="howtoTitle">How to Order</h2>
+        <p class="popup-sub">Follow these steps to place your order.</p>
+      </div>
+
+      <button class="popup-x" id="howtoCloseBtn" aria-label="Close popup">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <ol class="howto-list">
+      <li>
+        Select products and click <span class="pill">Add</span>.
+      </li>
+      <li> 
+        Open your <span class="pill soft">Cart</span> to review items.
+      </li>
+      <li>
+        Enter your <b>Name</b>, <b>Phone</b>, and <b>Address</b>.
+      </li>
+      <li>
+        Click <span class="pill">Place Order via Email</span> to confirm.
+      </li>
+    </ol>
+
+    <div class="popup-actions">
+      <button class="btn-outline" id="dontShowHowToBtn" type="button">Don’t show again</button>
+      <a class="btn-primary" href="#shop" id="startShoppingBtn">Start Shopping</a>
+    </div>
+  </div>
+</div>
 </body>
 <script src="../js/product-page.js"></script>
 <script src="../js/whatsapp-widget.js"></script>
