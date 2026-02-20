@@ -179,12 +179,13 @@ function renderProductsPage() {
         ${qty}
       </span>
     </td>
-    <td>
-      <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;"
-        onclick="editProduct('${p.id}')">Edit</button>
-      <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.8rem; margin-left: 0.5rem;"
-        onclick="deleteProduct('${p.id}')">Delete</button>
-    </td>
+   <td class="action-buttons">
+  <button class="btn btn-secondary"
+    onclick="editProduct('${p.id}')">Edit</button>
+
+  <button class="btn btn-danger"
+    onclick="deleteProduct('${p.id}')">Delete</button>
+</td>
   </tr>`;
 
   tbody.innerHTML += row;
