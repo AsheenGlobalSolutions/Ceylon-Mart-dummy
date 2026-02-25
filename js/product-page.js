@@ -1,3 +1,5 @@
+let isAdminView = false;
+
 // EmailJS (optional)
 const PUBLIC_KEY = "YOUR_PUBLIC_KEY";
 if (window.emailjs && PUBLIC_KEY !== "YOUR_PUBLIC_KEY") emailjs.init(PUBLIC_KEY);
@@ -53,8 +55,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  listenProductsRealtime();
-  renderCart();
+  if(window.auth){
+    console.log("window.auth is present");
+  }else{
+    console.log("window.auth is missing");
+  }
+
+ const authRef = window.auth; // ✅
+  if (!authRef) {
+    console.error("window.auth is missing. Check firebase-auth script + firebase.js load order.");
+    isAdminView = false;
+    listenProductsRealtime(); // fallback as public
+  } else {
+    authRef.onAuthStateChanged((user) => {
+      isAdminView = !!user;
+      listenProductsRealtime();
+    });
+  }  renderCart();
   initHowToPopup();
 });
 
@@ -66,26 +83,32 @@ window.addEventListener("beforeunload", () => {
 // Realtime products
 // --------------------
 function listenProductsRealtime() {
+  console.log("isAdminView:", isAdminView); // true if logged in
   const container = document.getElementById("products");
-  if (container) container.innerHTML = `<p style="text-align:center; width:100%;">Loading products...</p>`;
+  if (container) {
+    container.innerHTML = `<p style="text-align:center; width:100%;">Loading products...</p>`;
+  }
 
   if (unsubscribeShopProducts) unsubscribeShopProducts();
 
-  unsubscribeShopProducts = productsCol.onSnapshot(
+  // 🔥 IMPORTANT PART
+  const queryRef = isAdminView
+    ? productsCol                // Admin sees all
+    : productsCol.where("qty", ">", 0);  // Public sees only available
+
+  unsubscribeShopProducts = queryRef.onSnapshot(
     (snap) => {
       products = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      products.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+      products.sort((a, b) =>
+        (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+      );
 
       populateFilterOptions(products);
 
-      filteredProducts = [...products];
-      if (selectedCategory || selectedBrand) applyFilters(true);
-      else filteredProducts = sortForGrouping(filteredProducts);
+      filteredProducts = sortForGrouping([...products]);
 
-      const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-      if (currentPage > totalPages) currentPage = totalPages || 1;
-      if (currentPage < 1) currentPage = 1;
-
+      currentPage = 1;
       renderProducts();
       syncCartWithLatestStock();
       updateFilterSummaryUI();
@@ -333,6 +356,15 @@ function addToCart(id) {
 
 function renderCart() {
   let total = 0;
+
+  // Navbar badge count
+  const navCount = document.getElementById("navCartCount");
+  if (navCount) {
+    const count = cart.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+    navCount.textContent = count;
+    navCount.style.display = count > 0 ? "inline-flex" : "none";
+  }
+  
   const container = document.getElementById("cartItems");
   if (!container) return;
 
@@ -640,6 +672,26 @@ function showLoading(title="Processing...") {
   return Swal.fire({ title, allowOutsideClick:false, allowEscapeKey:false, didOpen: () => Swal.showLoading() });
 }
 function hideLoading(){ Swal.close(); }
+
+
+function scrollToCart() {
+  const cartEl = document.getElementById("cartSection");
+  if (!cartEl) return;
+
+  // close burger menu if open (mobile)
+  const nav = document.querySelector(".nav-links");
+  const burger = document.querySelector(".burger");
+  if (nav?.classList.contains("nav-active")) nav.classList.remove("nav-active");
+  if (burger?.classList.contains("toggle")) burger.classList.remove("toggle");
+
+  cartEl.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  // optional: small highlight effect
+  cartEl.classList.add("cart-highlight");
+  setTimeout(() => cartEl.classList.remove("cart-highlight"), 900);
+}
+
+window.scrollToCart = scrollToCart;
 
 // Expose functions for inline onclick
 window.openFilterDrawer = openFilterDrawer;

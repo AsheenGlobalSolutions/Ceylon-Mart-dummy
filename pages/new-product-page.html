@@ -15,8 +15,9 @@
   <link rel="stylesheet" href="../css/style.css" />
 
   <!-- Firebase compat SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
   <!-- EmailJS (optional) -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
@@ -25,7 +26,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <!-- Must define window.db, window.productsCol, window.ordersCol -->
-  <script src="../js/firebase-shop.js"></script>
+  <script src="../js/firebase.js"></script>
 </head>
 
 <body>
@@ -36,6 +37,12 @@
         <img src="../assets/images/logo.png" alt="Ceylon Mart" class="logo" />
         <a href="../index.html" class="brand">Ceylon Mart</a>
       </div>
+
+
+      <button class="nav-cart-btn" type="button" onclick="scrollToCart()" aria-label="Go to cart">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span class="nav-cart-badge" id="navCartCount" style="display:none;">0</span>
+      </button>
 
       <div class="burger">
         <div class="line1"></div>
@@ -74,7 +81,7 @@
       </div>
 
       <!-- RIGHT: Cart -->
-      <aside class="shop-sidebar">
+      <aside class="shop-sidebar" id="cartSection">
         <section class="cart-section">
           <h3 class="cart-title">🛒 Your Cart</h3>
 

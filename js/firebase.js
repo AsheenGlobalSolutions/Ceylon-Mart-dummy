@@ -26,3 +26,9 @@ window.db = db;
 window.productsCol = productsCol;
 window.ordersCol = ordersCol;
 
+console.log("✅ firebase.js loaded:", {
+  auth: !!window.auth,
+  db: !!window.db,
+  productsCol: !!window.productsCol,
+  ordersCol: !!window.ordersCol
+});
