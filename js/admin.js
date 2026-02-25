@@ -167,9 +167,14 @@ function renderProductsPage() {
   // ✅ show readable ID in table (fallback to old if missing)
   const readableId = p.productId || p.readableId || makeReadableProductIdFromDocId(p.id);
 
+   const imageHtml = p.image
+    ? `<img src="${p.image}" class="product-table-img" alt="product">`
+    : `<div class="no-image">No Image</div>`;
+
   const row = `<tr>
     <td>${readableId}</td>
     <td>${escapeHtml(p.name || "")}</td>
+    <td>${imageHtml}</td>  
     <td>${escapeHtml(p.brand || "No Brand")}</td>
     <td>${escapeHtml(p.category || "Other")}</td>
     <td>${escapeHtml(p.weight || "0")}</td>
@@ -359,6 +364,7 @@ function clearForm() {
   document.getElementById("productBrand").value = "";
   document.getElementById("productCategory").value = "";
   document.getElementById("weight").value = "";
+  document.getElementById("productImageFile").value = "";
 
   // Clear file input
   const fileInput = document.getElementById("productImageFile");
